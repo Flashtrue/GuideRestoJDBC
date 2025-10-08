@@ -11,7 +11,7 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
     @Override
     public EvaluationCriteria findById(int id) {
         Connection connection = ConnectionUtils.getConnection();
-        String query = "SELECT * FROM criteres_evaluation WHERE id = ?";
+        String query = "SELECT * FROM criteres_evaluation WHERE numero = ?";
 
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setInt(1, id);
@@ -70,7 +70,7 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
     @Override
     public boolean update(EvaluationCriteria criteria) {
         Connection connection = ConnectionUtils.getConnection();
-        String query = "UPDATE criteres_evaluation SET nom = ?, description = ? WHERE id = ?";
+        String query = "UPDATE criteres_evaluation SET nom = ?, description = ? WHERE numero = ?";
 
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setString(1, criteria.getName());
@@ -93,7 +93,7 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
     @Override
     public boolean deleteById(int id) {
         Connection connection = ConnectionUtils.getConnection();
-        String query = "DELETE FROM criteres_evaluation WHERE id = ?";
+        String query = "DELETE FROM criteres_evaluation WHERE numero = ?";
 
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setInt(1, id);
@@ -113,7 +113,7 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
 
     @Override
     protected String getExistsQuery() {
-        return "SELECT 1 FROM criteres_evaluation WHERE id = ?";
+        return "SELECT 1 FROM criteres_evaluation WHERE numero = ?";
     };
 
     @Override
@@ -123,7 +123,7 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
 
     private EvaluationCriteria mapResultSetToEvaluationCriteria(ResultSet rs) throws SQLException {
         EvaluationCriteria criteria = new EvaluationCriteria();
-        criteria.setId(rs.getInt("id"));
+        criteria.setId(rs.getInt("numero"));
         criteria.setName(rs.getString("nom"));
         criteria.setDescription(rs.getString("description"));
         return criteria;

@@ -11,7 +11,7 @@ public class GradeMapper extends AbstractMapper<Grade> {
     @Override
     public Grade findById(int id) {
         Connection connection = ConnectionUtils.getConnection();
-        String query = "SELECT * FROM notes WHERE id = ?";
+        String query = "SELECT * FROM notes WHERE numero = ?";
         
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setInt(1, id);
@@ -71,7 +71,7 @@ public class GradeMapper extends AbstractMapper<Grade> {
     @Override
     public boolean update(Grade grade) {
         Connection connection = ConnectionUtils.getConnection();
-        String query = "UPDATE notes SET note = ?, fk_comm = ?, fk_crit = ? WHERE id = ?";
+        String query = "UPDATE notes SET note = ?, fk_comm = ?, fk_crit = ? WHERE numero = ?";
         
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setInt(1, grade.getGrade());
@@ -95,7 +95,7 @@ public class GradeMapper extends AbstractMapper<Grade> {
     @Override
     public boolean deleteById(int id) {
         Connection connection = ConnectionUtils.getConnection();
-        String query = "DELETE FROM notes WHERE id = ?";
+        String query = "DELETE FROM notes WHERE numero = ?";
         
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setInt(1, id);
@@ -114,7 +114,7 @@ public class GradeMapper extends AbstractMapper<Grade> {
     
     @Override
     protected String getExistsQuery() {
-        return "SELECT 1 FROM notes WHERE id = ?";
+        return "SELECT 1 FROM notes WHERE numero = ?";
     };
     
     @Override
@@ -124,7 +124,7 @@ public class GradeMapper extends AbstractMapper<Grade> {
 
     private Grade mapResultSetToGrade(ResultSet rs) throws SQLException {
         Grade grade = new Grade();
-        grade.setId(rs.getInt("id"));
+        grade.setId(rs.getInt("numero"));
         grade.setGrade(rs.getInt("note"));
         
         CompleteEvaluationMapper evaluationMapper = new CompleteEvaluationMapper();
