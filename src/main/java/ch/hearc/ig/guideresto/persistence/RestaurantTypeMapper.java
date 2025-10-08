@@ -1,0 +1,141 @@
+package ch.hearc.ig.guideresto.persistence;
+
+import ch.hearc.ig.guideresto.business.RestaurantType;
+import java.sql.*;
+import java.util.HashSet;
+import java.util.Set;
+
+public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
+    private static RestaurantTypeMapper instance = null;
+
+    private RestaurantTypeMapper() {
+        super();
+    }
+
+    public static RestaurantTypeMapper getInstance() {
+        if (instance == null) {
+            instance = new RestaurantTypeMapper();
+        }
+        return instance;
+    }
+
+    protected RestaurantType mapResultSetToRestaurantType(ResultSet rs) throws SQLException {
+        RestaurantType type = new RestaurantType();
+        type.setId(rs.getInt("NUMERO"));
+        type.setLabel(rs.getString("LIBELLE"));
+        type.setDescription(rs.getString("DESCRIPTION"));
+        return type;
+    }
+
+    @Override
+    public RestaurantType findById(int id) {
+        String sql = "SELECT * FROM TYPES_GASTRONOMIQUES WHERE NUMERO = ?";
+        Connection connection = ConnectionUtils.getConnection();
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToRestaurantType(rs);
+                }
+            }
+        } catch (SQLException ex) {
+            logger.error("Erreur lors de la recherche du type de restaurant ID: {}", id, ex);
+        }
+        return null;
+    }
+
+    @Override
+    public Set<RestaurantType> findAll() {
+        Set<RestaurantType> types = new HashSet<>();
+        String sql = "SELECT * FROM TYPES_GASTRONOMIQUES";
+        Connection connection = ConnectionUtils.getConnection();
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                types.add(mapResultSetToRestaurantType(rs));
+            }
+        } catch (SQLException ex) {
+            logger.error("Erreur lors de la recherche de tous les types de restaurants", ex);
+        }
+        return types;
+    }
+
+    @Override
+    public RestaurantType create(RestaurantType type) {
+        String sql = "INSERT INTO TYPES_GASTRONOMIQUES (NUMERO, LIBELLE, DESCRIPTION) " +
+                "VALUES (SEQ_TYPES_GASTRONOMIQUES.NEXTVAL, ?, ?)";
+        Connection connection = ConnectionUtils.getConnection();
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql, new String[]{"NUMERO"})) {
+            stmt.setString(1, type.getLabel());
+            stmt.setString(2, type.getDescription());
+
+            int affectedRows = stmt.executeUpdate();
+            if (affectedRows > 0) {
+                try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        type.setId(generatedKeys.getInt(1));
+                        return type;
+                    }
+                }
+            }
+        } catch (SQLException ex) {
+            logger.error("Erreur lors de la création du type de restaurant", ex);
+        }
+        return null;
+    }
+
+    @Override
+    public boolean update(RestaurantType type) {
+        String sql = "UPDATE TYPES_GASTRONOMIQUES SET LIBELLE = ?, DESCRIPTION = ? WHERE NUMERO = ?";
+        Connection connection = ConnectionUtils.getConnection();
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, type.getLabel());
+            stmt.setString(2, type.getDescription());
+            stmt.setInt(3, type.getId());
+
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            logger.error("Erreur lors de la mise à jour du type de restaurant ID: {}", type.getId(), ex);
+        }
+        return false;
+    }
+
+    @Override
+    public boolean delete(RestaurantType type) {
+        return deleteById(type.getId());
+    }
+
+    @Override
+    public boolean deleteById(int id) {
+        String sql = "DELETE FROM TYPES_GASTRONOMIQUES WHERE NUMERO = ?";
+        Connection connection = ConnectionUtils.getConnection();
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            logger.error("Erreur lors de la suppression du type de restaurant ID: {}", id, ex);
+        }
+        return false;
+    }
+
+    @Override
+    protected String getSequenceQuery() {
+        return "SELECT SEQ_TYPES_GASTRONOMIQUES.CURRVAL FROM DUAL";
+    }
+
+    @Override
+    protected String getExistsQuery() {
+        return "SELECT 1 FROM TYPES_GASTRONOMIQUES WHERE NUMERO = ?";
+    }
+
+    @Override
+    protected String getCountQuery() {
+        return "SELECT COUNT(*) FROM TYPES_GASTRONOMIQUES";
+    }
+}
