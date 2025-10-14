@@ -7,18 +7,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class CityMapper extends AbstractMapper<City> {
-    private static CityMapper instance = null;
 
-    private CityMapper() {
-        super();
-    }
 
-    public static CityMapper getInstance() {
-        if (instance == null) {
-            instance = new CityMapper();
-        }
-        return instance;
-    }
+
     @Override
     public City findById(int id) {
         Connection connection = ConnectionUtils.getConnection();

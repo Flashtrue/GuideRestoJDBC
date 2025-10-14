@@ -8,25 +8,18 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
+    private final RestaurantMapper restaurantMapper;
 
-    private static BasicEvaluationMapper instance = null;
-
-    private BasicEvaluationMapper() {
+    public BasicEvaluationMapper() {
         super();
-    }
-
-    public static BasicEvaluationMapper getInstance() {
-        if (instance == null) {
-            instance = new BasicEvaluationMapper();
-        }
-        return instance;
+        this.restaurantMapper = new RestaurantMapper();
     }
 
     @Override
     public BasicEvaluation findById(int id) {
         Connection connection = ConnectionUtils.getConnection();
         String query = "SELECT * FROM LIKES WHERE numero = ?";
-        
+
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
@@ -45,7 +38,7 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
         Set<BasicEvaluation> evaluations = new HashSet<>();
         Connection connection = ConnectionUtils.getConnection();
         String query = "SELECT * FROM LIKES";
-        
+
         try (PreparedStatement stmt = connection.prepareStatement(query);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
@@ -60,23 +53,25 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
     @Override
     public BasicEvaluation create(BasicEvaluation evaluation) {
         Connection connection = ConnectionUtils.getConnection();
-        String query = "INSERT INTO LIKES (appreciation, date_eval, fk_rest) VALUES (?, ?, ?)";
-        
+        String query = "INSERT INTO LIKES (appreciation, date_eval, fk_rest, ip_address) VALUES (?, ?, ?, ?)";
+
         try (PreparedStatement stmt = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setString(1, evaluation.getLikeType());
-            
+            stmt.setBoolean(1, evaluation.getLikeRestaurant());
+
             if (evaluation.getVisitDate() != null) {
                 stmt.setDate(2, new java.sql.Date(evaluation.getVisitDate().getTime()));
             } else {
                 stmt.setNull(2, Types.DATE);
             }
-            
+
             if (evaluation.getRestaurant() != null) {
                 stmt.setInt(3, evaluation.getRestaurant().getId());
             } else {
                 stmt.setNull(3, Types.INTEGER);
             }
-            
+
+            stmt.setString(4, evaluation.getIpAddress());
+
             int affectedRows = stmt.executeUpdate();
             if (affectedRows > 0) {
                 try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
@@ -95,25 +90,26 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
     @Override
     public boolean update(BasicEvaluation evaluation) {
         Connection connection = ConnectionUtils.getConnection();
-        String query = "UPDATE LIKES SET appreciation = ?, date_eval = ?, fk_rest = ? WHERE numero = ?";
-        
+        String query = "UPDATE LIKES SET appreciation = ?, date_eval = ?, fk_rest = ?, ip_address = ? WHERE numero = ?";
+
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
-            stmt.setString(1, evaluation.getLikeType());
-            
+            stmt.setBoolean(1, evaluation.getLikeRestaurant());
+
             if (evaluation.getVisitDate() != null) {
                 stmt.setDate(2, new java.sql.Date(evaluation.getVisitDate().getTime()));
             } else {
                 stmt.setNull(2, Types.DATE);
             }
-            
+
             if (evaluation.getRestaurant() != null) {
                 stmt.setInt(3, evaluation.getRestaurant().getId());
             } else {
                 stmt.setNull(3, Types.INTEGER);
             }
-            
-            stmt.setInt(4, evaluation.getId());
-            
+
+            stmt.setString(4, evaluation.getIpAddress());
+            stmt.setInt(5, evaluation.getId());
+
             return stmt.executeUpdate() > 0;
         } catch (SQLException ex) {
             logger.error("Erreur lors de la mise à jour de l'appréciation ID: " + evaluation.getId(), ex);
@@ -130,7 +126,7 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
     public boolean deleteById(int id) {
         Connection connection = ConnectionUtils.getConnection();
         String query = "DELETE FROM LIKES WHERE numero = ?";
-        
+
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setInt(1, id);
             return stmt.executeUpdate() > 0;
@@ -158,25 +154,27 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
     private BasicEvaluation mapResultSetToBasicEvaluation(ResultSet rs) throws SQLException {
         BasicEvaluation evaluation = new BasicEvaluation();
         evaluation.setId(rs.getInt("numero"));
-        evaluation.setLikeType(rs.getString("appreciation"));
+        // Correction : utiliser getBoolean() au lieu de getString()
+        evaluation.setLikeRestaurant(rs.getBoolean("appreciation"));
         evaluation.setVisitDate(rs.getDate("date_eval"));
-        
+        evaluation.setIpAddress(rs.getString("ip_address"));
+
         // Get restaurant using RestaurantMapper
         int restaurantId = rs.getInt("fk_rest");
         if (!rs.wasNull()) {
-            Restaurant restaurant = RestaurantMapper.getInstance().findById(restaurantId);
+            Restaurant restaurant = restaurantMapper.findById(restaurantId);
             evaluation.setRestaurant(restaurant);
         }
-        
+
         return evaluation;
     }
-    
+
     // Find all BasicEvaluations for a specific Restaurant
     public Set<BasicEvaluation> findByRestaurant(Restaurant restaurant) {
         Set<BasicEvaluation> evaluations = new HashSet<>();
         Connection connection = ConnectionUtils.getConnection();
         String query = "SELECT * FROM LIKES WHERE fk_rest = ?";
-        
+
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setInt(1, restaurant.getId());
             try (ResultSet rs = stmt.executeQuery()) {

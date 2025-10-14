@@ -6,18 +6,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
-    private static RestaurantTypeMapper instance = null;
 
-    private RestaurantTypeMapper() {
-        super();
-    }
 
-    public static RestaurantTypeMapper getInstance() {
-        if (instance == null) {
-            instance = new RestaurantTypeMapper();
-        }
-        return instance;
-    }
+
 
     protected RestaurantType mapResultSetToRestaurantType(ResultSet rs) throws SQLException {
         RestaurantType type = new RestaurantType();

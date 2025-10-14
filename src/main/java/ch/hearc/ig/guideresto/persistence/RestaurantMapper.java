@@ -8,19 +8,14 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class RestaurantMapper extends AbstractMapper<Restaurant> {
-    private static RestaurantMapper instance = null;
+    private final CityMapper cityMapper;
+    private final RestaurantTypeMapper restaurantTypeMapper;
 
-    private RestaurantMapper() {
+    public RestaurantMapper() {
         super();
+        this.cityMapper = new CityMapper();
+        this.restaurantTypeMapper = new RestaurantTypeMapper();
     }
-
-    public static RestaurantMapper getInstance() {
-        if (instance == null) {
-            instance = new RestaurantMapper();
-        }
-        return instance;
-    }
-
     //Takes the data and creates a java object
     protected Restaurant mapResultSetToRestaurant(ResultSet rs) throws SQLException {
         Restaurant restaurant = new Restaurant();
@@ -31,10 +26,10 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
         // Relations
         int cityId = rs.getInt("FK_VILL");
-        City city = CityMapper.getInstance().findById(cityId);
+        City city = cityMapper.findById(cityId);
 
         int typeId = rs.getInt("FK_TYPE");
-        RestaurantType type = RestaurantTypeMapper.getInstance().findById(typeId);
+        RestaurantType type = restaurantTypeMapper.findById(typeId);
 
         String street = rs.getString("ADRESSE");
         Localisation address = new Localisation(street, city);
