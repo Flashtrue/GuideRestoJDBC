@@ -12,6 +12,11 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
 
     @Override
     public CompleteEvaluation findById(int id) {
+        CompleteEvaluation cachedEvaluation = getFromCache(id);
+        if (cachedEvaluation != null) {
+            return cachedEvaluation;
+        }
+        
         Connection connection = ConnectionUtils.getConnection();
         String query = "SELECT * FROM commentaires WHERE numero = ?";
         
@@ -19,7 +24,9 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
             stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return mapResultSetToCompleteEvaluation(rs);
+                    CompleteEvaluation evaluation = mapResultSetToCompleteEvaluation(rs);
+                    addToCache(evaluation);
+                    return evaluation;
                 }
             }
         } catch (SQLException ex) {
@@ -37,7 +44,9 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
         try (PreparedStatement stmt = connection.prepareStatement(query);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
-                evaluations.add(mapResultSetToCompleteEvaluation(rs));
+                CompleteEvaluation evaluation = mapResultSetToCompleteEvaluation(rs);
+                addToCache(evaluation);
+                evaluations.add(evaluation);
             }
         } catch (SQLException ex) {
             logger.error("Erreur lors de la récupération de toutes les évaluations complètes", ex);
@@ -134,40 +143,19 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
     }
 
     // Méthode privée pour mapper ResultSet vers CompleteEvaluation
-    private CompleteEvaluation mapResultSetToCompleteEvaluation(ResultSet rs) throws SQLException {
+     private CompleteEvaluation mapResultSetToCompleteEvaluation(ResultSet rs) throws SQLException {
         Integer id = rs.getInt("numero");
         java.util.Date visitDate = rs.getDate("date_eval");
         String comment = rs.getString("commentaire");
         String username = rs.getString("nom_utilisateur");
         
-        // TODO: Récupérer le restaurant associé (via RestaurantMapper ou requête JOIN)
-        // Vous devrez implémenter cette partie selon votre RestaurantMapper
-        Restaurant restaurant = null; // À implémenter selon votre logique
+        // Get restaurant using RestaurantMapper
+        int restaurantId = rs.getInt("fk_rest");
+        Restaurant restaurant = restaurantMapper.findById(restaurantId);
         
-        CompleteEvaluation evaluation = new CompleteEvaluation(id, visitDate, restaurant, comment, username);
-        
-        // TODO: Charger les grades associés si nécessaire
-        // evaluation.setGrades(loadGradesForEvaluation(id));
+        CompleteEvaluation evaluation = new CompleteEvaluation(id, visitDate, restaurant, comment, username); 
         
         return evaluation;
     }
-
-    // Méthodes utilitaires supplémentaires
-    public Set<CompleteEvaluation> findByRestaurant(Restaurant restaurant) {
-        Set<CompleteEvaluation> evaluations = new HashSet<>();
-        Connection connection = ConnectionUtils.getConnection();
-        String query = "SELECT * FROM commentaires WHERE fk_rest = ?";
-        
-        try (PreparedStatement stmt = connection.prepareStatement(query)) {
-            stmt.setInt(1, restaurant.getId());
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    evaluations.add(mapResultSetToCompleteEvaluation(rs));
-                }
-            }
-        } catch (SQLException ex) {
-            logger.error("Erreur lors de la recherche des évaluations pour le restaurant: " + restaurant.getId(), ex);
-        }
-        return evaluations;
-    }
+    
 }

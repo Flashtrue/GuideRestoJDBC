@@ -14,7 +14,10 @@ import java.util.Set;
 
 public abstract class AbstractMapper<T extends IBusinessObject> {
 
+    private final Map<Integer, T> objectCache = new HashMap<>();
+
     protected static final Logger logger = LogManager.getLogger();
+    
 
     public abstract T findById(int id);
     public abstract Set<T> findAll();
@@ -93,16 +96,14 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
      * @return true si le cache ne contient aucun objet, false sinon
      */
     protected boolean isCacheEmpty() {
-        // TODO à implémenter par vos soins
-        throw new UnsupportedOperationException("Vous devez implémenter votre cache vous-même !");
+        return objectCache.isEmpty();
     }
 
     /**
      * Vide le cache
      */
     protected void resetCache() {
-        // TODO à implémenter par vos soins
-        throw new UnsupportedOperationException("Vous devez implémenter votre cache vous-même !");
+        objectCache.clear();
     }
 
     /**
@@ -110,8 +111,9 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
      * @param objet l'objet à ajouter
      */
     protected void addToCache(T objet) {
-        // TODO à implémenter par vos soins
-        throw new UnsupportedOperationException("Vous devez implémenter votre cache vous-même !");
+        if (objet != null && objet.getId() != null) {
+            objectCache.put(objet.getId(), objet);
+        }
     }
 
     /**
@@ -119,7 +121,17 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
      * @param id l'ID de l'objet à retirer du cache
      */
     protected void removeFromCache(Integer id) {
-        // TODO à implémenter par vos soins
-        throw new UnsupportedOperationException("Vous devez implémenter votre cache vous-même !");
+        if (id != null) {
+            objectCache.remove(id);
+        }
+    }
+
+    /**
+     * Récupère un objet du cache par son ID
+     * @param id l'ID de l'objet à récupérer
+     * @return l'objet s'il existe dans le cache, null sinon
+     */
+    protected T getFromCache(Integer id) {
+        return id != null ? objectCache.get(id) : null;
     }
 }

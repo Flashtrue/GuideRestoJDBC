@@ -10,6 +10,11 @@ public class GradeMapper extends AbstractMapper<Grade> {
 
     @Override
     public Grade findById(int id) {
+        Grade cachedGrade = getFromCache(id);
+        if (cachedGrade != null) {
+            return cachedGrade;
+        }
+        
         Connection connection = ConnectionUtils.getConnection();
         String query = "SELECT * FROM notes WHERE numero = ?";
         
@@ -17,14 +22,16 @@ public class GradeMapper extends AbstractMapper<Grade> {
             stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return mapResultSetToGrade(rs);
+                    Grade grade = mapResultSetToGrade(rs);
+                    addToCache(grade);
+                    return grade;
                 }
             }
         } catch (SQLException ex) {
             logger.error("Erreur lors de la recherche de la note avec l'id: " + id, ex);
         }
         return null;
-    };
+    }
 
     @Override
     public Set<Grade> findAll() {
@@ -35,13 +42,15 @@ public class GradeMapper extends AbstractMapper<Grade> {
         try (PreparedStatement stmt = connection.prepareStatement(query);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
-                grades.add(mapResultSetToGrade(rs));
+                Grade grade = mapResultSetToGrade(rs);
+                addToCache(grade);
+                grades.add(grade);
             }
         } catch (SQLException ex) {
             logger.error("Erreur lors de la récupération de toutes les notes", ex);
         }
         return grades;
-    };
+    }
 
     @Override
     public Grade create(Grade grade) {
@@ -58,6 +67,7 @@ public class GradeMapper extends AbstractMapper<Grade> {
                 try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                     if (generatedKeys.next()) {
                         grade.setId(generatedKeys.getInt(1));
+                        addToCache(grade);
                         return grade;
                     }
                 }
@@ -66,7 +76,7 @@ public class GradeMapper extends AbstractMapper<Grade> {
             logger.error("Erreur lors de la création de la note", ex);
         }
         return null;
-    };
+    }
 
     @Override
     public boolean update(Grade grade) {
@@ -80,12 +90,15 @@ public class GradeMapper extends AbstractMapper<Grade> {
             stmt.setInt(4, grade.getId());
             
             int affectedRows = stmt.executeUpdate();
-            return affectedRows > 0;
+            if (affectedRows > 0) {
+                addToCache(grade);
+                return true;
+            }
         } catch (SQLException ex) {
             logger.error("Erreur lors de la mise à jour de la note avec l'id: " + grade.getId(), ex);
         }
         return false;
-    };
+    }
 
     @Override
     public boolean delete(Grade grade) {
@@ -100,12 +113,15 @@ public class GradeMapper extends AbstractMapper<Grade> {
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setInt(1, id);
             int affectedRows = stmt.executeUpdate();
-            return affectedRows > 0;
+            if (affectedRows > 0) {
+                removeFromCache(id);
+                return true;
+            }
         } catch (SQLException ex) {
             logger.error("Erreur lors de la suppression de la note avec l'id: " + id, ex);
         }
         return false;
-    };
+    }
 
     @Override
     protected String getSequenceQuery() {
