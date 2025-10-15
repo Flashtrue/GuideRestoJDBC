@@ -62,23 +62,29 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
     @Override
     public CompleteEvaluation create(CompleteEvaluation evaluation) {
         Connection connection = ConnectionUtils.getConnection();
-        String query = "INSERT INTO commentaires (date_eval, commentaire, nom_utilisateur, fk_rest) VALUES (?, ?, ?, ?)";
         
-        try (PreparedStatement stmt = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setDate(1, new java.sql.Date(evaluation.getVisitDate().getTime()));
-            stmt.setString(2, evaluation.getComment());
-            stmt.setString(3, evaluation.getUsername());
-            stmt.setInt(4, evaluation.getRestaurant().getId());
+        // Récupérer d'abord la valeur de la séquence
+        Integer id = getSequenceValue();
+        if (id == null || id == 0) {
+            logger.error("Impossible d'obtenir la valeur de la séquence pour commentaires");
+            return null;
+        }
+        
+        // Utiliser l'ID récupéré manuellement dans la requête INSERT
+        String query = "INSERT INTO commentaires (numero, date_eval, commentaire, nom_utilisateur, fk_rest) VALUES (?, ?, ?, ?, ?)";
+        
+        try (PreparedStatement stmt = connection.prepareStatement(query)) {
+            stmt.setInt(1, id);
+            stmt.setDate(2, new java.sql.Date(evaluation.getVisitDate().getTime()));
+            stmt.setString(3, evaluation.getComment());
+            stmt.setString(4, evaluation.getUsername());
+            stmt.setInt(5, evaluation.getRestaurant().getId());
             
             int affectedRows = stmt.executeUpdate();
             if (affectedRows > 0) {
-                try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        evaluation.setId(generatedKeys.getInt(1));
-                        addToCache(evaluation);
-                        return evaluation;
-                    }
-                }
+                evaluation.setId(id);
+                addToCache(evaluation);
+                return evaluation;
             }
         } catch (SQLException ex) {
             logger.error("Erreur lors de la création de l'évaluation complète", ex);
@@ -134,7 +140,7 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
 
     @Override
     protected String getSequenceQuery() {
-        return "SELECT nextval('commentaires_numero_seq')";
+        return "SELECT commentaires_numero_seq.nextval FROM dual";
     }
 
     @Override
@@ -162,5 +168,25 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
         
         return evaluation;
     }
+
+    public Set<CompleteEvaluation> findByRestaurantId(int restaurantId) {
+    Set<CompleteEvaluation> evaluations = new HashSet<>();
+    Connection connection = ConnectionUtils.getConnection();
+    String query = "SELECT * FROM commentaires WHERE fk_rest = ?";
+    
+    try (PreparedStatement stmt = connection.prepareStatement(query)) {
+        stmt.setInt(1, restaurantId);
+        try (ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                CompleteEvaluation evaluation = mapResultSetToCompleteEvaluation(rs);
+                addToCache(evaluation);
+                evaluations.add(evaluation);
+            }
+        }
+    } catch (SQLException ex) {
+        logger.error("Erreur lors de la recherche des évaluations pour le restaurant ID: " + restaurantId, ex);
+    }
+    return evaluations;
+}
     
 }

@@ -55,28 +55,44 @@ public class GradeMapper extends AbstractMapper<Grade> {
     @Override
     public Grade create(Grade grade) {
         Connection connection = ConnectionUtils.getConnection();
-        String query = "INSERT INTO notes (note, fk_comm, fk_crit) VALUES (?, ?, ?)";
         
-        try (PreparedStatement stmt = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setInt(1, grade.getGrade());
-            stmt.setInt(2, grade.getEvaluation().getId());
-            stmt.setInt(3, grade.getCriteria().getId());
+        // Récupérer d'abord la valeur de la séquence
+        Integer id = getSequenceValue();
+        if (id == null || id == 0) {
+            logger.error("Impossible d'obtenir la valeur de la séquence pour notes");
+            return null;
+        }
+        
+        String query = "INSERT INTO notes (numero, note, fk_comm, fk_crit) VALUES (?, ?, ?, ?)";
+        
+        try (PreparedStatement stmt = connection.prepareStatement(query)) {
+            stmt.setInt(1, id);
+            stmt.setInt(2, grade.getGrade());
+            
+            // Vérification pour éviter la NullPointerException
+            if (grade.getEvaluation() == null || grade.getEvaluation().getId() == null) {
+                logger.error("L'évaluation associée à cette note est null ou son ID est null");
+                return null;
+            }
+            stmt.setInt(3, grade.getEvaluation().getId());
+            
+            if (grade.getCriteria() == null || grade.getCriteria().getId() == null) {
+                logger.error("Le critère associé à cette note est null ou son ID est null");
+                return null;
+            }
+            stmt.setInt(4, grade.getCriteria().getId());
             
             int affectedRows = stmt.executeUpdate();
             if (affectedRows > 0) {
-                try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        grade.setId(generatedKeys.getInt(1));
-                        addToCache(grade);
-                        return grade;
-                    }
-                }
+                grade.setId(id);
+                addToCache(grade);
+                return grade;
             }
         } catch (SQLException ex) {
             logger.error("Erreur lors de la création de la note", ex);
         }
         return null;
-    }
+}
 
     @Override
     public boolean update(Grade grade) {
@@ -125,8 +141,8 @@ public class GradeMapper extends AbstractMapper<Grade> {
 
     @Override
     protected String getSequenceQuery() {
-        return "SELECT nextval('grade_seq')";
-    };
+        return "SELECT notes_seq.nextval FROM dual";
+    }
     
     @Override
     protected String getExistsQuery() {
@@ -150,5 +166,25 @@ public class GradeMapper extends AbstractMapper<Grade> {
         grade.setCriteria(criteriaMapper.findById(rs.getInt("fk_crit")));
 
         return grade;
-    }; 
+    };
+
+    public Set<Grade> findByEvaluationId(int evaluationId) {
+        Set<Grade> grades = new HashSet<>();
+        Connection connection = ConnectionUtils.getConnection();
+        String query = "SELECT * FROM notes WHERE fk_comm = ?";
+        
+        try (PreparedStatement stmt = connection.prepareStatement(query)) {
+            stmt.setInt(1, evaluationId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Grade grade = mapResultSetToGrade(rs);
+                    addToCache(grade);
+                    grades.add(grade);
+                }
+            }
+        } catch (SQLException ex) {
+            logger.error("Erreur lors de la recherche des notes pour l'évaluation ID: " + evaluationId, ex);
+        }
+        return grades;
+    }
 }
