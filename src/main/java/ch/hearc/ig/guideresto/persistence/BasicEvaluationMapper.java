@@ -17,6 +17,12 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
 
     @Override
     public BasicEvaluation findById(int id) {
+        // Vérifier le cache d'abord
+        BasicEvaluation cachedEvaluation = getFromCache(id);
+        if (cachedEvaluation != null) {
+            return cachedEvaluation;
+        }
+        
         Connection connection = ConnectionUtils.getConnection();
         String query = "SELECT * FROM LIKES WHERE numero = ?";
 
@@ -24,7 +30,9 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
             stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return mapResultSetToBasicEvaluation(rs);
+                    BasicEvaluation evaluation = mapResultSetToBasicEvaluation(rs);
+                    addToCache(evaluation);
+                    return evaluation;
                 }
             }
         } catch (SQLException ex) {
@@ -42,7 +50,9 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
         try (PreparedStatement stmt = connection.prepareStatement(query);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
-                evaluations.add(mapResultSetToBasicEvaluation(rs));
+                BasicEvaluation evaluation = mapResultSetToBasicEvaluation(rs);
+                addToCache(evaluation);
+                evaluations.add(evaluation);
             }
         } catch (SQLException ex) {
             logger.error("Erreur lors de la récupération de toutes les appréciations", ex);
@@ -77,6 +87,7 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
                 try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                     if (generatedKeys.next()) {
                         evaluation.setId(generatedKeys.getInt(1));
+                        addToCache(evaluation);
                         return evaluation;
                     }
                 }
@@ -110,7 +121,11 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
             stmt.setString(4, evaluation.getIpAddress());
             stmt.setInt(5, evaluation.getId());
 
-            return stmt.executeUpdate() > 0;
+            int affectedRows = stmt.executeUpdate();
+            if (affectedRows > 0) {
+                addToCache(evaluation);
+                return true;
+            }
         } catch (SQLException ex) {
             logger.error("Erreur lors de la mise à jour de l'appréciation ID: " + evaluation.getId(), ex);
         }
@@ -129,7 +144,11 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
 
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setInt(1, id);
-            return stmt.executeUpdate() > 0;
+            int affectedRows = stmt.executeUpdate();
+            if (affectedRows > 0) {
+                removeFromCache(id);
+                return true;
+            }
         } catch (SQLException ex) {
             logger.error("Erreur lors de la suppression de l'appréciation ID: " + id, ex);
         }
@@ -154,7 +173,6 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
     private BasicEvaluation mapResultSetToBasicEvaluation(ResultSet rs) throws SQLException {
         BasicEvaluation evaluation = new BasicEvaluation();
         evaluation.setId(rs.getInt("numero"));
-        // Correction : utiliser getBoolean() au lieu de getString()
         evaluation.setLikeRestaurant(rs.getBoolean("appreciation"));
         evaluation.setVisitDate(rs.getDate("date_eval"));
         evaluation.setIpAddress(rs.getString("ip_address"));
@@ -179,7 +197,9 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
             stmt.setInt(1, restaurant.getId());
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    evaluations.add(mapResultSetToBasicEvaluation(rs));
+                    BasicEvaluation evaluation = mapResultSetToBasicEvaluation(rs);
+                    addToCache(evaluation);
+                    evaluations.add(evaluation);
                 }
             }
         } catch (SQLException ex) {

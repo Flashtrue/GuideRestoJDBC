@@ -10,6 +10,12 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
 
     @Override
     public EvaluationCriteria findById(int id) {
+        // Vérifier le cache d'abord
+        EvaluationCriteria cachedCriteria = getFromCache(id);
+        if (cachedCriteria != null) {
+            return cachedCriteria;
+        }
+        
         Connection connection = ConnectionUtils.getConnection();
         String query = "SELECT * FROM criteres_evaluation WHERE numero = ?";
 
@@ -17,14 +23,16 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
             stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return mapResultSetToEvaluationCriteria(rs);
+                    EvaluationCriteria criteria = mapResultSetToEvaluationCriteria(rs);
+                    addToCache(criteria);
+                    return criteria;
                 }
             }
         } catch (SQLException ex) {
             logger.error("Erreur lors de la recherche du critère avec l'id: " + id, ex);
         }
         return null;
-    };
+    }
 
     @Override
     public Set<EvaluationCriteria> findAll() {
@@ -35,13 +43,15 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
         try (PreparedStatement stmt = connection.prepareStatement(query);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
-                criteriaSet.add(mapResultSetToEvaluationCriteria(rs));
+                EvaluationCriteria criteria = mapResultSetToEvaluationCriteria(rs);
+                addToCache(criteria);
+                criteriaSet.add(criteria);
             }
         } catch (SQLException ex) {
             logger.error("Erreur lors de la récupération de tous les critères d'évaluation", ex);
         }
         return criteriaSet;
-    };
+    }
 
     @Override
     public EvaluationCriteria create(EvaluationCriteria criteria) {
@@ -57,6 +67,7 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
                 try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                     if (generatedKeys.next()) {
                         criteria.setId(generatedKeys.getInt(1));
+                        addToCache(criteria);
                         return criteria;
                     }
                 }
@@ -65,7 +76,7 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
             logger.error("Erreur lors de la création du critère d'évaluation", ex);
         }
         return null;
-    };
+    }
 
     @Override
     public boolean update(EvaluationCriteria criteria) {
@@ -78,17 +89,20 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
             stmt.setInt(3, criteria.getId());
 
             int affectedRows = stmt.executeUpdate();
-            return affectedRows > 0;
+            if (affectedRows > 0) {
+                addToCache(criteria);
+                return true;
+            }
         } catch (SQLException ex) {
             logger.error("Erreur lors de la mise à jour du critère d'évaluation avec l'id: " + criteria.getId(), ex);
         }
         return false;
-    };
+    }
 
     @Override
     public boolean delete(EvaluationCriteria criteria) {
         return deleteById(criteria.getId());
-    };
+    }
 
     @Override
     public boolean deleteById(int id) {
@@ -97,29 +111,31 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
 
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setInt(1, id);
-
             int affectedRows = stmt.executeUpdate();
-            return affectedRows > 0;
+            if (affectedRows > 0) {
+                removeFromCache(id);
+                return true;
+            }
         } catch (SQLException ex) {
             logger.error("Erreur lors de la suppression du critère d'évaluation avec l'id: " + id, ex);
         }
         return false;
-    };
+    }
     
     @Override
     protected String getSequenceQuery() {
         return "SELECT nextval('criteres_evaluation_seq')";
-    };
+    }
 
     @Override
     protected String getExistsQuery() {
         return "SELECT 1 FROM criteres_evaluation WHERE numero = ?";
-    };
+    }
 
     @Override
     protected String getCountQuery() {
         return "SELECT COUNT(*) FROM criteres_evaluation";
-    };
+    }
 
     private EvaluationCriteria mapResultSetToEvaluationCriteria(ResultSet rs) throws SQLException {
         EvaluationCriteria criteria = new EvaluationCriteria();
@@ -127,5 +143,5 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
         criteria.setName(rs.getString("nom"));
         criteria.setDescription(rs.getString("description"));
         return criteria;
-    };
+    }
 }
