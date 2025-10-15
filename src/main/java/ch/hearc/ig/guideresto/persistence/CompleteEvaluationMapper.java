@@ -9,6 +9,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation> {
+    private final RestaurantMapper restaurantMapper;
+    public CompleteEvaluationMapper() {
+        super();
+        this.restaurantMapper = new RestaurantMapper();
+    }
 
     @Override
     public CompleteEvaluation findById(int id) {
