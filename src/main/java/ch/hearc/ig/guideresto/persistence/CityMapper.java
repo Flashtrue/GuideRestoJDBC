@@ -8,10 +8,14 @@ import java.util.Set;
 
 public class CityMapper extends AbstractMapper<City> {
 
-
-
     @Override
     public City findById(int id) {
+        // Vérifier d'abord le cache
+        City cachedCity = getFromCache(id);
+        if (cachedCity != null) {
+            return cachedCity;
+        }
+
         Connection connection = ConnectionUtils.getConnection();
         String query = "SELECT * FROM villes WHERE numero = ?";
 
@@ -19,14 +23,16 @@ public class CityMapper extends AbstractMapper<City> {
             stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return mapResultSetToCity(rs);
+                    City city = mapResultSetToCity(rs);
+                    addToCache(city);
+                    return city;
                 }
             }
         } catch (SQLException ex) {
             logger.error("Erreur lors de la recherche de la ville avec l'id: " + id, ex);
         }
         return null;
-    };
+    }
 
     @Override
     public Set<City> findAll() {
@@ -37,13 +43,15 @@ public class CityMapper extends AbstractMapper<City> {
         try (PreparedStatement stmt = connection.prepareStatement(query);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
-                cities.add(mapResultSetToCity(rs));
+                City city = mapResultSetToCity(rs);
+                addToCache(city);
+                cities.add(city);
             }
         } catch (SQLException ex) {
             logger.error("Erreur lors de la récupération de toutes les villes", ex);
         }
         return cities;
-    };
+    }
 
     @Override
     public City create(City city) {
@@ -59,6 +67,7 @@ public class CityMapper extends AbstractMapper<City> {
                 try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                     if (generatedKeys.next()) {
                         city.setId(generatedKeys.getInt(1));
+                        addToCache(city);
                         return city;
                     }
                 }
@@ -67,7 +76,7 @@ public class CityMapper extends AbstractMapper<City> {
             logger.error("Erreur lors de la création de la ville: " + city, ex);
         }
         return null;
-    };
+    }
 
     @Override
     public boolean update(City city) {
@@ -81,18 +90,19 @@ public class CityMapper extends AbstractMapper<City> {
 
             int affectedRows = stmt.executeUpdate();
             if (affectedRows > 0) {
+                addToCache(city);
                 return true;
             }
         } catch (SQLException ex) {
             logger.error("Erreur lors de la mise à jour de la ville: " + city, ex);
         }
         return false;
-    };
+    }
 
     @Override
     public boolean delete(City city) {
         return deleteById(city.getId());
-    };
+    }
 
     @Override
     public boolean deleteById(int id) {
@@ -102,27 +112,30 @@ public class CityMapper extends AbstractMapper<City> {
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setInt(1, id);
             int affectedRows = stmt.executeUpdate();
-            return affectedRows > 0;
+            if (affectedRows > 0) {
+                removeFromCache(id);
+                return true;
+            }
         } catch (SQLException ex) {
             logger.error("Erreur lors de la suppression de la ville avec l'id: " + id, ex);
         }
         return false;
-    };
+    }
 
     @Override
     protected String getSequenceQuery() {
         return "SELECT nextval('villes_seq')";
-    };
+    }
 
     @Override
     protected String getExistsQuery() {
         return "SELECT 1 FROM villes WHERE numero = ?";
-    };
+    }
 
     @Override
     protected String getCountQuery() {
         return "SELECT COUNT(*) FROM villes";
-    };
+    }
 
     private City mapResultSetToCity(ResultSet rs) throws SQLException {
         City city = new City();
@@ -130,5 +143,5 @@ public class CityMapper extends AbstractMapper<City> {
         city.setZipCode(rs.getString("code_postal"));
         city.setCityName(rs.getString("nom_ville"));
         return city;
-    };
+    }
 }

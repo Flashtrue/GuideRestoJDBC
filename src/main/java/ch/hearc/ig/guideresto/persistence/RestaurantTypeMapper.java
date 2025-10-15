@@ -7,19 +7,14 @@ import java.util.Set;
 
 public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
 
-
-
-
-    protected RestaurantType mapResultSetToRestaurantType(ResultSet rs) throws SQLException {
-        RestaurantType type = new RestaurantType();
-        type.setId(rs.getInt("NUMERO"));
-        type.setLabel(rs.getString("LIBELLE"));
-        type.setDescription(rs.getString("DESCRIPTION"));
-        return type;
-    }
-
     @Override
     public RestaurantType findById(int id) {
+        // Vérifier d'abord le cache
+        RestaurantType cachedType = getFromCache(id);
+        if (cachedType != null) {
+            return cachedType;
+        }
+
         String sql = "SELECT * FROM TYPES_GASTRONOMIQUES WHERE NUMERO = ?";
         Connection connection = ConnectionUtils.getConnection();
 
@@ -27,7 +22,9 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
             stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return mapResultSetToRestaurantType(rs);
+                    RestaurantType type = mapResultSetToRestaurantType(rs);
+                    addToCache(type);
+                    return type;
                 }
             }
         } catch (SQLException ex) {
@@ -46,7 +43,9 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
              ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
-                types.add(mapResultSetToRestaurantType(rs));
+                RestaurantType type = mapResultSetToRestaurantType(rs);
+                addToCache(type);
+                types.add(type);
             }
         } catch (SQLException ex) {
             logger.error("Erreur lors de la recherche de tous les types de restaurants", ex);
@@ -69,6 +68,7 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
                 try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                     if (generatedKeys.next()) {
                         type.setId(generatedKeys.getInt(1));
+                        addToCache(type);
                         return type;
                     }
                 }
@@ -89,7 +89,11 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
             stmt.setString(2, type.getDescription());
             stmt.setInt(3, type.getId());
 
-            return stmt.executeUpdate() > 0;
+            int affectedRows = stmt.executeUpdate();
+            if (affectedRows > 0) {
+                addToCache(type);
+                return true;
+            }
         } catch (SQLException ex) {
             logger.error("Erreur lors de la mise à jour du type de restaurant ID: {}", type.getId(), ex);
         }
@@ -108,11 +112,23 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, id);
-            return stmt.executeUpdate() > 0;
+            int affectedRows = stmt.executeUpdate();
+            if (affectedRows > 0) {
+                removeFromCache(id);
+                return true;
+            }
         } catch (SQLException ex) {
             logger.error("Erreur lors de la suppression du type de restaurant ID: {}", id, ex);
         }
         return false;
+    }
+
+    protected RestaurantType mapResultSetToRestaurantType(ResultSet rs) throws SQLException {
+        RestaurantType type = new RestaurantType();
+        type.setId(rs.getInt("NUMERO"));
+        type.setLabel(rs.getString("LIBELLE"));
+        type.setDescription(rs.getString("DESCRIPTION"));
+        return type;
     }
 
     @Override
