@@ -124,7 +124,7 @@ public class CityMapper extends AbstractMapper<City> {
 
     @Override
     protected String getSequenceQuery() {
-        return "SELECT nextval('villes_seq')";
+        return "SELECT SEQ_VILLES.CURRVAL FROM DUAL";
     }
 
     @Override

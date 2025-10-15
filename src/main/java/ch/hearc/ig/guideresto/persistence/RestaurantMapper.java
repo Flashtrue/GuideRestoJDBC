@@ -25,7 +25,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
             return cachedRestaurant;
         }
 
-        String sql = "SELECT * FROM RESTAURANT WHERE NUMERO = ?";
+        String sql = "SELECT * FROM RESTAURANTS WHERE NUMERO = ?";
         Connection connextion = ConnectionUtils.getConnection();
 
         try (PreparedStatement stmt = connextion.prepareStatement(sql)) {
@@ -65,8 +65,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
     @Override
     public Restaurant create(Restaurant restaurant) {
-        String sql = "INSERT INTO RESTAURANTS (NUMERO, NOM, DESCRIPTION, SITE_WEB, FK_VILLE, FK_TYPE) " +
-                "VALUES (SEQ_RESTAURANTS.NEXTVAL, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO RESTAURANTS (NOM, DESCRIPTION, SITE_WEB, FK_VILL, FK_TYPE) VALUES (?, ?, ?, ?, ?)";
         Connection connection = ConnectionUtils.getConnection();
 
         try (PreparedStatement stmt = connection.prepareStatement(sql, new String[]{"NUMERO"})) {
@@ -104,7 +103,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
     @Override
     public boolean update(Restaurant restaurant) {
-        String sql = "UPDATE RESTAURANTS SET NOM = ?, DESCRIPTION = ?, SITE_WEB = ?, FK_VILLE = ?, FK_TYPE = ? " +
+        String sql = "UPDATE RESTAURANTS SET NOM = ?, DESCRIPTION = ?, SITE_WEB = ?, FK_VILL = ?, FK_TYPE = ? " +
                 "WHERE NUMERO = ?";
         Connection connection = ConnectionUtils.getConnection();
 

@@ -55,8 +55,7 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
 
     @Override
     public RestaurantType create(RestaurantType type) {
-        String sql = "INSERT INTO TYPES_GASTRONOMIQUES (NUMERO, LIBELLE, DESCRIPTION) " +
-                "VALUES (SEQ_TYPES_GASTRONOMIQUES.NEXTVAL, ?, ?)";
+        String sql = "INSERT INTO TYPES_GASTRONOMIQUES (LIBELLE, DESCRIPTION) VALUES (?, ?)";
         Connection connection = ConnectionUtils.getConnection();
 
         try (PreparedStatement stmt = connection.prepareStatement(sql, new String[]{"NUMERO"})) {
