@@ -63,10 +63,10 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
     @Override
     public BasicEvaluation create(BasicEvaluation evaluation) {
         Connection connection = ConnectionUtils.getConnection();
-        String query = "INSERT INTO LIKES (appreciation, date_eval, fk_rest, ip_address) VALUES (?, ?, ?, ?)";
+        String query = "INSERT INTO LIKES (APPRECIATION, DATE_EVAL, FK_REST, ADRESSE_IP) VALUES (?, ?, ?, ?)";
 
-        try (PreparedStatement stmt = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setBoolean(1, evaluation.getLikeRestaurant());
+        try (PreparedStatement stmt = connection.prepareStatement(query, new String[]{"NUMERO"})) {
+            stmt.setString(1, evaluation.getLikeRestaurant() ? "T" : "F");
 
             if (evaluation.getVisitDate() != null) {
                 stmt.setDate(2, new java.sql.Date(evaluation.getVisitDate().getTime()));
@@ -101,10 +101,10 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
     @Override
     public boolean update(BasicEvaluation evaluation) {
         Connection connection = ConnectionUtils.getConnection();
-        String query = "UPDATE LIKES SET appreciation = ?, date_eval = ?, fk_rest = ?, ip_address = ? WHERE numero = ?";
+        String query = "UPDATE LIKES SET appreciation = ?, date_eval = ?, fk_rest = ?, adresse_ip = ? WHERE numero = ?";
 
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
-            stmt.setBoolean(1, evaluation.getLikeRestaurant());
+            stmt.setString(1, evaluation.getLikeRestaurant() ? "T" : "F");
 
             if (evaluation.getVisitDate() != null) {
                 stmt.setDate(2, new java.sql.Date(evaluation.getVisitDate().getTime()));
@@ -157,7 +157,7 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
 
     @Override
     protected String getSequenceQuery() {
-        return "SELECT nextval('likes_seq')";
+        return "SELECT seq_eval.currval FROM dual";
     }
 
     @Override
@@ -172,13 +172,15 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
 
     private BasicEvaluation mapResultSetToBasicEvaluation(ResultSet rs) throws SQLException {
         BasicEvaluation evaluation = new BasicEvaluation();
-        evaluation.setId(rs.getInt("numero"));
-        evaluation.setLikeRestaurant(rs.getBoolean("appreciation"));
-        evaluation.setVisitDate(rs.getDate("date_eval"));
-        evaluation.setIpAddress(rs.getString("ip_address"));
+        evaluation.setId(rs.getInt("NUMERO"));
+        
+        String appreciationChar = rs.getString("APPRECIATION");
+        evaluation.setLikeRestaurant("T".equalsIgnoreCase(appreciationChar));
+        
+        evaluation.setVisitDate(rs.getDate("DATE_EVAL"));
+        evaluation.setIpAddress(rs.getString("ADRESSE_IP"));
 
-        // Get restaurant using RestaurantMapper
-        int restaurantId = rs.getInt("fk_rest");
+        int restaurantId = rs.getInt("FK_REST");
         if (!rs.wasNull()) {
             Restaurant restaurant = restaurantMapper.findById(restaurantId);
             evaluation.setRestaurant(restaurant);

@@ -124,7 +124,7 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
     
     @Override
     protected String getSequenceQuery() {
-        return "SELECT nextval('criteres_evaluation_seq')";
+        return "SELECT seq_criteres_evaluation.currval FROM dual";
     }
 
     @Override
