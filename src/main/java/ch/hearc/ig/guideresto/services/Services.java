@@ -428,10 +428,6 @@ public class Services {
      * Cette méthode doit être appelée à la fermeture de l'application
      */
     public void closeConnection() {
-        try {
             ConnectionUtils.closeConnection();
-        } catch (SQLException e) {
-            logger.error("Erreur lors de la fermeture de la connexion", e);
-        }
     }
 }

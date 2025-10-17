@@ -1,4 +1,5 @@
 package ch.hearc.ig.guideresto.persistence;
+
 import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.business.City;
 import ch.hearc.ig.guideresto.business.RestaurantType;
@@ -26,9 +27,9 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
         }
 
         String sql = "SELECT * FROM RESTAURANTS WHERE NUMERO = ?";
-        Connection connextion = ConnectionUtils.getConnection();
+        Connection connection = ConnectionUtils.getConnection();
 
-        try (PreparedStatement stmt = connextion.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -65,24 +66,27 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
     @Override
     public Restaurant create(Restaurant restaurant) {
-        String sql = "INSERT INTO RESTAURANTS (NOM, DESCRIPTION, SITE_WEB, FK_VILL, FK_TYPE) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO RESTAURANTS (NOM, DESCRIPTION, SITE_WEB, ADRESSE, FK_VILL, FK_TYPE) VALUES (?, ?, ?, ?, ?, ?)";
         Connection connection = ConnectionUtils.getConnection();
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql, new String[]{"NUMERO"})) {
+        try (PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, restaurant.getName());
             stmt.setString(2, restaurant.getDescription());
             stmt.setString(3, restaurant.getWebsite());
 
+            // Ajout de l'adresse (rue)
             if (restaurant.getAddress() != null) {
-                stmt.setInt(4, restaurant.getAddress().getCity().getId());
+                stmt.setString(4, restaurant.getAddress().getStreet());
+                stmt.setInt(5, restaurant.getAddress().getCity().getId());
             } else {
-                stmt.setNull(4, Types.INTEGER);
+                stmt.setNull(4, Types.VARCHAR);
+                stmt.setNull(5, Types.INTEGER);
             }
 
             if (restaurant.getType() != null) {
-                stmt.setInt(5, restaurant.getType().getId());
+                stmt.setInt(6, restaurant.getType().getId());
             } else {
-                stmt.setNull(5, Types.INTEGER);
+                stmt.setNull(6, Types.INTEGER);
             }
 
             int affectedRows = stmt.executeUpdate();
@@ -103,8 +107,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
     @Override
     public boolean update(Restaurant restaurant) {
-        String sql = "UPDATE RESTAURANTS SET NOM = ?, DESCRIPTION = ?, SITE_WEB = ?, FK_VILL = ?, FK_TYPE = ? " +
-                "WHERE NUMERO = ?";
+        String sql = "UPDATE RESTAURANTS SET NOM = ?, DESCRIPTION = ?, SITE_WEB = ?, ADRESSE = ?, FK_VILL = ?, FK_TYPE = ? WHERE NUMERO = ?";
         Connection connection = ConnectionUtils.getConnection();
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
@@ -112,19 +115,22 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
             stmt.setString(2, restaurant.getDescription());
             stmt.setString(3, restaurant.getWebsite());
 
+            // Ajout de l'adresse (rue)
             if (restaurant.getAddress() != null) {
-                stmt.setInt(4, restaurant.getAddress().getCity().getId());
+                stmt.setString(4, restaurant.getAddress().getStreet());
+                stmt.setInt(5, restaurant.getAddress().getCity().getId());
             } else {
-                stmt.setNull(4, Types.INTEGER);
-            }
-
-            if (restaurant.getType() != null) {
-                stmt.setInt(5, restaurant.getType().getId());
-            } else {
+                stmt.setNull(4, Types.VARCHAR);
                 stmt.setNull(5, Types.INTEGER);
             }
 
-            stmt.setInt(6, restaurant.getId());
+            if (restaurant.getType() != null) {
+                stmt.setInt(6, restaurant.getType().getId());
+            } else {
+                stmt.setNull(6, Types.INTEGER);
+            }
+
+            stmt.setInt(7, restaurant.getId());
 
             int affectedRows = stmt.executeUpdate();
             if (affectedRows > 0) {
@@ -169,23 +175,25 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
         // Relations
         int cityId = rs.getInt("FK_VILL");
-        City city = cityMapper.findById(cityId);
+        if (!rs.wasNull()) {
+            City city = cityMapper.findById(cityId);
+            String street = rs.getString("ADRESSE");
+            Localisation address = new Localisation(street, city);
+            restaurant.setAddress(address);
+        }
 
         int typeId = rs.getInt("FK_TYPE");
-        RestaurantType type = restaurantTypeMapper.findById(typeId);
-
-        String street = rs.getString("ADRESSE");
-        Localisation address = new Localisation(street, city);
-
-        restaurant.setAddress(address);
-        restaurant.setType(type);
+        if (!rs.wasNull()) {
+            RestaurantType type = restaurantTypeMapper.findById(typeId);
+            restaurant.setType(type);
+        }
 
         return restaurant;
     }
 
     @Override
     protected String getSequenceQuery() {
-        return "SELECT SEQ_RESTAURANTS.CURRVAL FROM DUAL";
+        return "SELECT restaurants_numero_seq.nextval FROM dual";
     }
 
     @Override
