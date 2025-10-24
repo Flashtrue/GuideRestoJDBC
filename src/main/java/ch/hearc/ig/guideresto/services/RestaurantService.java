@@ -103,22 +103,20 @@ public class RestaurantService extends AbstractService {
     public boolean delete(Restaurant restaurant) {
         try {
             executeInTransaction(() -> {
-                // Récupération des évaluations associées
-                Set<Evaluation> evaluations = new HashSet<>();
-                evaluations.addAll(basicEvaluationService.findByRestaurant(restaurant));
-                evaluations.addAll(completeEvaluationService.findByRestaurantId(restaurant.getId()));
+                Set<BasicEvaluation> basicEvaluations = basicEvaluationService.findByRestaurant(restaurant);
+                for (BasicEvaluation basicEval : basicEvaluations) {
+                    basicEvaluationService.delete(basicEval);
+                }
 
-                // Suppression de toutes les évaluations
-                for (Evaluation evaluation : evaluations) {
-                    if (evaluation instanceof CompleteEvaluation) {
-                        CompleteEvaluation completeEvaluation = (CompleteEvaluation) evaluation;
-                        for (Grade grade : completeEvaluation.getGrades()) {
-                            gradeService.delete(grade);
-                        }
-                        completeEvaluationService.delete(completeEvaluation);
-                    } else if (evaluation instanceof BasicEvaluation) {
-                        basicEvaluationService.delete((BasicEvaluation) evaluation);
+                Set<CompleteEvaluation> completeEvaluations = completeEvaluationService.findByRestaurantId(restaurant.getId());
+                for (CompleteEvaluation completeEval : completeEvaluations) {
+                    Set<Grade> grades = gradeService.findByEvaluationId(completeEval.getId());
+                    
+                    for (Grade grade : grades) {
+                        gradeService.delete(grade);
                     }
+                    
+                    completeEvaluationService.delete(completeEval);
                 }
 
                 restaurantMapper.delete(restaurant);
