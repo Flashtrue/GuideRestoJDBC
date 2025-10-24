@@ -363,7 +363,7 @@ public class Application {
     private static void addBasicEvaluation(Restaurant restaurant, Boolean like) {
         String ipAddress;
         try {
-            ipAddress = Inet4Address.getLocalHost().toString(); // Permet de retrouver l'adresse IP locale de l'utilisateur.
+            ipAddress = Inet4Address.getLocalHost().toString(); 
         } catch (UnknownHostException ex) {
             logger.error("Error - Couldn't retreive host IP address");
             ipAddress = "Indisponible";
@@ -397,7 +397,7 @@ public class Application {
         for (EvaluationCriteria currentCriteria : services.getEvaluationCriteriaService().getAll()) {
             System.out.println(currentCriteria.getName() + " : " + currentCriteria.getDescription());
             Integer note = readInt();
-            grade = new Grade(null, note, null, currentCriteria); // L'évaluation sera définie lors de la création
+            grade = new Grade(null, note, null, currentCriteria); 
             grades.add(grade);
         }
 

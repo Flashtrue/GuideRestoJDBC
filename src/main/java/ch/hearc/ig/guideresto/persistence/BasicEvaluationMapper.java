@@ -17,7 +17,6 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
 
     @Override
     public BasicEvaluation findById(int id) {
-        // Vérifier le cache d'abord
         BasicEvaluation cachedEvaluation = getFromCache(id);
         if (cachedEvaluation != null) {
             return cachedEvaluation;

@@ -20,7 +20,6 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
     @Override
     public Restaurant findById(int id) {
-        // Vérifier d'abord le cache
         Restaurant cachedRestaurant = getFromCache(id);
         if (cachedRestaurant != null) {
             return cachedRestaurant;
@@ -74,7 +73,6 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
             stmt.setString(2, restaurant.getDescription());
             stmt.setString(3, restaurant.getWebsite());
 
-            // Ajout de l'adresse (rue)
             if (restaurant.getAddress() != null) {
                 stmt.setString(4, restaurant.getAddress().getStreet());
                 stmt.setInt(5, restaurant.getAddress().getCity().getId());
@@ -115,7 +113,6 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
             stmt.setString(2, restaurant.getDescription());
             stmt.setString(3, restaurant.getWebsite());
 
-            // Ajout de l'adresse (rue)
             if (restaurant.getAddress() != null) {
                 stmt.setString(4, restaurant.getAddress().getStreet());
                 stmt.setInt(5, restaurant.getAddress().getCity().getId());
