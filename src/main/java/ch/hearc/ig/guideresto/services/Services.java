@@ -22,7 +22,6 @@ public class Services {
         this.gradeService = new GradeService();
     }
 
-    // Getters pour accéder aux services spécialisés
     public RestaurantService getRestaurantService() {
         return restaurantService;
     }

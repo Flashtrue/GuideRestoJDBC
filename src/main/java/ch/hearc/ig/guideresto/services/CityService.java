@@ -37,9 +37,9 @@ public class CityService extends AbstractService {
     public City create(City city) {
         try {
             executeInTransaction(() -> {
-                City createdCity = cityMapper.create(city); // Récupérer la ville créée
+                City createdCity = cityMapper.create(city); 
                 if (createdCity != null && createdCity.getId() != null) {
-                    city.setId(createdCity.getId()); // Copier l'ID
+                    city.setId(createdCity.getId()); 
                 }
             });
             return city;

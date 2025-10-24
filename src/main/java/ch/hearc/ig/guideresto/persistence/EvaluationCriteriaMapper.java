@@ -10,7 +10,6 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
 
     @Override
     public EvaluationCriteria findById(int id) {
-        // Vérifier le cache d'abord
         EvaluationCriteria cachedCriteria = getFromCache(id);
         if (cachedCriteria != null) {
             return cachedCriteria;

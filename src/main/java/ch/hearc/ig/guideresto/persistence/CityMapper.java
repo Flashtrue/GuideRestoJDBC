@@ -10,7 +10,6 @@ public class CityMapper extends AbstractMapper<City> {
 
     @Override
     public City findById(int id) {
-        // Vérifier d'abord le cache
         City cachedCity = getFromCache(id);
         if (cachedCity != null) {
             return cachedCity;
@@ -66,15 +65,14 @@ public class CityMapper extends AbstractMapper<City> {
             if (affectedRows > 0) {
                 try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                     if (generatedKeys.next()) {
-                        // Essayer de récupérer l'ID de différentes manières
                         try {
-                            city.setId(generatedKeys.getInt(1)); // Par index
+                            city.setId(generatedKeys.getInt(1)); 
                         } catch (SQLException e) {
                             try {
-                                city.setId(generatedKeys.getInt("numero")); // Par nom de colonne (minuscule)
+                                city.setId(generatedKeys.getInt("numero")); 
                             } catch (SQLException e2) {
                                 try {
-                                    city.setId(generatedKeys.getInt("NUMERO")); // Par nom de colonne (majuscule)
+                                    city.setId(generatedKeys.getInt("NUMERO")); 
                                 } catch (SQLException e3) {
                                     logger.error("Impossible de récupérer l'ID généré", e3);
                                     return null;

@@ -35,7 +35,6 @@ public class BasicEvaluationService extends AbstractService {
                 basicEvaluationMapper.create(evaluation);
             });
 
-            // Mettre à jour la collection d'évaluations du restaurant en mémoire
             restaurant.getEvaluations().add(evaluation);
 
             return evaluation;

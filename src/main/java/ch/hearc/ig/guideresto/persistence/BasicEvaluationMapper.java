@@ -189,7 +189,6 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
         return evaluation;
     }
 
-    // Find all BasicEvaluations for a specific Restaurant
     public Set<BasicEvaluation> findByRestaurant(Restaurant restaurant) {
         Set<BasicEvaluation> evaluations = new HashSet<>();
         Connection connection = ConnectionUtils.getConnection();

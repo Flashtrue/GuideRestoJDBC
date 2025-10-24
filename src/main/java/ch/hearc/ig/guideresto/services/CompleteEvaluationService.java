@@ -43,7 +43,6 @@ public class CompleteEvaluationService extends AbstractService {
                     throw new RuntimeException("Échec de la création de l'évaluation");
                 }
 
-                // Ajout des notes
                 Set<Grade> createdGrades = new HashSet<>();
                 for (Grade grade : grades) {
                     grade.setEvaluation(createdEvaluation);
@@ -58,7 +57,6 @@ public class CompleteEvaluationService extends AbstractService {
                 createdEvaluation.setGrades(createdGrades);
             });
 
-            // Mettre à jour la collection d'évaluations du restaurant en mémoire
             restaurant.getEvaluations().add(evaluation);
 
             return evaluation;
@@ -95,7 +93,6 @@ public class CompleteEvaluationService extends AbstractService {
     public Set<CompleteEvaluation> getCompleteEvaluationsWithGrades(Restaurant restaurant) {
         Set<CompleteEvaluation> evaluations = findByRestaurantId(restaurant.getId());
 
-        // Charger les notes pour chaque évaluation
         for (CompleteEvaluation evaluation : evaluations) {
             Set<Grade> grades = gradeService.findByEvaluationId(evaluation.getId());
             evaluation.setGrades(grades);

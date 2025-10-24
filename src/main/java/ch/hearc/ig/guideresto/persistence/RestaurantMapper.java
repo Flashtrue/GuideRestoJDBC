@@ -173,7 +173,6 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
         restaurant.setDescription(rs.getString("DESCRIPTION"));
         restaurant.setWebsite(rs.getString("SITE_WEB"));
 
-        // Relations
         int cityId = rs.getInt("FK_VILL");
         if (!rs.wasNull()) {
             City city = cityMapper.findById(cityId);

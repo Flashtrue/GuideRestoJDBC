@@ -147,14 +147,12 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
         return "SELECT COUNT(*) FROM commentaires";
     }
 
-    // Méthode privée pour mapper ResultSet vers CompleteEvaluation
      private CompleteEvaluation mapResultSetToCompleteEvaluation(ResultSet rs) throws SQLException {
         Integer id = rs.getInt("numero");
         java.util.Date visitDate = rs.getDate("date_eval");
         String comment = rs.getString("commentaire");
         String username = rs.getString("nom_utilisateur");
         
-        // Get restaurant using RestaurantMapper
         int restaurantId = rs.getInt("fk_rest");
         Restaurant restaurant = restaurantMapper.findById(restaurantId);
         

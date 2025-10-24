@@ -9,7 +9,6 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
 
     @Override
     public RestaurantType findById(int id) {
-        // Vérifier d'abord le cache
         RestaurantType cachedType = getFromCache(id);
         if (cachedType != null) {
             return cachedType;

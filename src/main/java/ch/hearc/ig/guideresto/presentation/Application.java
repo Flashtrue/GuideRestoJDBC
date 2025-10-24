@@ -31,7 +31,6 @@ public class Application {
             proceedMainMenu(choice);
         } while (choice != 0);
 
-        // Fermer proprement la connexion à la fin de l'application
         services.closeConnection();
     }
 
@@ -87,7 +86,7 @@ public class Application {
      * @return L'instance du restaurant choisi par l'utilisateur
      */
     private static Restaurant pickRestaurant(Set<Restaurant> restaurants) {
-        if (restaurants.isEmpty()) { // Si la liste est vide on s'arrête là
+        if (restaurants.isEmpty()) { 
             System.out.println("Aucun restaurant n'a été trouvé !");
             return null;
         }
@@ -107,7 +106,6 @@ public class Application {
             return null;
         }
 
-        // Rechercher le restaurant par son nom
         for (Restaurant restaurant : restaurants) {
             if (restaurant.getName().equalsIgnoreCase(choice)) {
                 return restaurant;
@@ -186,7 +184,7 @@ public class Application {
 
             City createdCity = services.getCityService().create(city);
             if (createdCity != null && createdCity.getId() != null) {
-                return createdCity; // Retourner la ville créée avec son ID
+                return createdCity;
             } else {
                 System.out.println("Erreur lors de la création de la ville !");
                 return null;
@@ -287,7 +285,6 @@ public class Application {
         sb.append("Nombre de dislikes : ").append(services.getBasicEvaluationService().countLikes(restaurant, false)).append("\n");
         sb.append("\nEvaluations reçues : ").append("\n");
 
-        // Récupérer les évaluations complètes du restaurant
         Set<CompleteEvaluation> evaluations = services.getCompleteEvaluationService().getCompleteEvaluationsWithGrades(restaurant);
 
         for (CompleteEvaluation evaluation : evaluations) {
@@ -302,11 +299,11 @@ public class Application {
         System.out.println(sb);
 
         int choice;
-        do { // Tant que l'utilisateur n'entre pas 0 ou 6, on lui propose à nouveau les actions
+        do { 
             showRestaurantMenu();
             choice = readInt();
             proceedRestaurantMenu(choice, restaurant);
-        } while (choice != 0 && choice != 6); // 6 car le restaurant est alors supprimé...
+        } while (choice != 0 && choice != 6); 
     }
 
     /**
@@ -457,7 +454,7 @@ public class Application {
         restaurant.getAddress().setStreet(readString());
 
         City newCity = null;
-        do { // S'assurer qu'une ville valide est sélectionnée
+        do { 
             newCity = pickCity(services.getCityService().getAll());
             if (newCity != null && newCity.getId() != null) {
                 restaurant.getAddress().setCity(newCity);
@@ -503,7 +500,7 @@ public class Application {
     private static int readInt() {
         int i = 0;
         boolean success = false;
-        do { // Tant que l'utilisateur n'aura pas saisi un nombre entier, on va lui demander une nouvelle saisie
+        do { 
             try {
                 i = scanner.nextInt();
                 success = true;
