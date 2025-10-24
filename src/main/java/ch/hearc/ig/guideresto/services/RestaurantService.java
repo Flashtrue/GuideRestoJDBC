@@ -76,7 +76,10 @@ public class RestaurantService extends AbstractService {
     public Restaurant create(Restaurant restaurant) {
         try {
             executeInTransaction(() -> {
-                restaurantMapper.create(restaurant);
+                Restaurant createdRestaurant = restaurantMapper.create(restaurant);
+                if (createdRestaurant != null && createdRestaurant.getId() != null) {
+                    restaurant.setId(createdRestaurant.getId());
+                }
             });
             return restaurant;
         } catch (SQLException e) {

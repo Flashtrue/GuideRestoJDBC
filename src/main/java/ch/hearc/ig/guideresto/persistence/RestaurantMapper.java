@@ -69,7 +69,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
         String sql = "INSERT INTO RESTAURANTS (NOM, DESCRIPTION, SITE_WEB, ADRESSE, FK_VILL, FK_TYPE) VALUES (?, ?, ?, ?, ?, ?)";
         Connection connection = ConnectionUtils.getConnection();
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement stmt = connection.prepareStatement(sql, new String[]{"NUMERO"})) {
             stmt.setString(1, restaurant.getName());
             stmt.setString(2, restaurant.getDescription());
             stmt.setString(3, restaurant.getWebsite());

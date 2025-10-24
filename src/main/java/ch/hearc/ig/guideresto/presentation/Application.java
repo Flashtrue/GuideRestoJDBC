@@ -183,7 +183,14 @@ public class Application {
             city.setZipCode(readString());
             System.out.println("Veuillez entrer le nom de la nouvelle ville : ");
             city.setCityName(readString());
-            return services.getCityService().create(city);
+
+            City createdCity = services.getCityService().create(city);
+            if (createdCity != null && createdCity.getId() != null) {
+                return createdCity; // Retourner la ville créée avec son ID
+            } else {
+                System.out.println("Erreur lors de la création de la ville !");
+                return null;
+            }
         }
 
         return services.getCityService().findByZipCode(choice);
@@ -240,23 +247,21 @@ public class Application {
         String street = readString();
 
         City city = null;
-        do { // La sélection d'une ville est obligatoire
+        do {
             city = pickCity(services.getCityService().getAll());
         } while (city == null);
 
         RestaurantType restaurantType = null;
-        do { // La sélection d'un type est obligatoire
+        do {
             restaurantType = pickRestaurantType(services.getRestaurantTypeService().getAll());
         } while (restaurantType == null);
 
-        // Création du restaurant
-        Localisation address = new Localisation(street, city);
+
         Restaurant restaurant = new Restaurant(null, name, description, website, street, city, restaurantType);
-        restaurant.setAddress(address);
 
         restaurant = services.getRestaurantService().create(restaurant);
 
-        if (restaurant != null) {
+        if (restaurant != null && restaurant.getId() != null) {
             System.out.println("Restaurant créé avec succès !");
             showRestaurant(restaurant);
         } else {
@@ -451,10 +456,15 @@ public class Application {
         System.out.println("Nouvelle rue : ");
         restaurant.getAddress().setStreet(readString());
 
-        City newCity = pickCity(services.getCityService().getAll());
-        if (newCity != null && !newCity.equals(restaurant.getAddress().getCity())) {
-            restaurant.getAddress().setCity(newCity);
-        }
+        City newCity = null;
+        do { // S'assurer qu'une ville valide est sélectionnée
+            newCity = pickCity(services.getCityService().getAll());
+            if (newCity != null && newCity.getId() != null) {
+                restaurant.getAddress().setCity(newCity);
+            } else {
+                System.out.println("Ville invalide, veuillez réessayer.");
+            }
+        } while (newCity == null || newCity.getId() == null);
 
         boolean success = services.getRestaurantService().update(restaurant);
 

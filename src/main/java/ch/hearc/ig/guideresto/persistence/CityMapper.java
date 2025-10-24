@@ -58,7 +58,7 @@ public class CityMapper extends AbstractMapper<City> {
         Connection connection = ConnectionUtils.getConnection();
         String query = "INSERT INTO villes (code_postal, nom_ville) VALUES (?, ?)";
 
-        try (PreparedStatement stmt = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement stmt = connection.prepareStatement(query, new String[]{"NUMERO"})) {
             stmt.setString(1, city.getZipCode());
             stmt.setString(2, city.getCityName());
 
@@ -66,7 +66,21 @@ public class CityMapper extends AbstractMapper<City> {
             if (affectedRows > 0) {
                 try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                     if (generatedKeys.next()) {
-                        city.setId(generatedKeys.getInt("NUMERO"));
+                        // Essayer de récupérer l'ID de différentes manières
+                        try {
+                            city.setId(generatedKeys.getInt(1)); // Par index
+                        } catch (SQLException e) {
+                            try {
+                                city.setId(generatedKeys.getInt("numero")); // Par nom de colonne (minuscule)
+                            } catch (SQLException e2) {
+                                try {
+                                    city.setId(generatedKeys.getInt("NUMERO")); // Par nom de colonne (majuscule)
+                                } catch (SQLException e3) {
+                                    logger.error("Impossible de récupérer l'ID généré", e3);
+                                    return null;
+                                }
+                            }
+                        }
                         addToCache(city);
                         return city;
                     }
@@ -77,7 +91,6 @@ public class CityMapper extends AbstractMapper<City> {
         }
         return null;
     }
-
     @Override
     public boolean update(City city) {
         Connection connection = ConnectionUtils.getConnection();
