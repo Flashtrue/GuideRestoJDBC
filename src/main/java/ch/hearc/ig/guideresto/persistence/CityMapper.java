@@ -66,7 +66,7 @@ public class CityMapper extends AbstractMapper<City> {
             if (affectedRows > 0) {
                 try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                     if (generatedKeys.next()) {
-                        city.setId(generatedKeys.getInt(1));
+                        city.setId(generatedKeys.getInt("NUMERO"));
                         addToCache(city);
                         return city;
                     }
