@@ -39,6 +39,7 @@ build/
 
 ### Configuration files ###
 src/main/resources/database.properties
+src/main/resources/hibernate.properties
 
 ### Log files ###
 logs/*
