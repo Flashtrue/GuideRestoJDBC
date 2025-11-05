@@ -1,6 +1,7 @@
 package ch.hearc.ig.guideresto.business;
 
 import org.apache.commons.collections4.CollectionUtils;
+import jakarta.persistence.*;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -8,14 +9,30 @@ import java.util.Set;
 /**
  * @author cedric.baudet
  */
+@Entity
+@Table(name = "RESTAURANTS")
 public class Restaurant implements IBusinessObject {
 
+    @Id
+   @Column(name = "NUMERO")
     private Integer id;
+    
+    @Column(name = "NOM")
     private String name;
+    
+    @Column(name = "DESCRIPTION")
     private String description;
+    
+    @Column(name = "SITE_WEB")
     private String website;
+    
+    @Transient // Ignore pour le moment (collections)
     private Set<Evaluation> evaluations;
+    
+    @Transient // Ignore pour le moment (objet composite)
     private Localisation address;
+    
+    @Transient // Ignore pour le moment (association)
     private RestaurantType type;
 
     public Restaurant() {
@@ -27,7 +44,7 @@ public class Restaurant implements IBusinessObject {
         this.name = name;
         this.description = description;
         this.website = website;
-        this.evaluations = new HashSet();
+        this.evaluations = new HashSet<>();
         this.address = new Localisation(street, city);
         this.type = type;
     }
@@ -37,11 +54,12 @@ public class Restaurant implements IBusinessObject {
         this.name = name;
         this.description = description;
         this.website = website;
-        this.evaluations = new HashSet();
+        this.evaluations = new HashSet<>();
         this.address = address;
         this.type = type;
     }
 
+    @Override
     public Integer getId() {
         return id;
     }

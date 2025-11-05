@@ -10,7 +10,7 @@ import java.util.List;
 public class Application2 {
 
     public static void main(String[] args) {
-        // Remplacez "guiderestoPU" par le nom de votre persistence-unit dans persistence.xml
+        
         String persistenceUnitName = "guideRestoJPA";
         EntityManagerFactory emf = null;
         EntityManager em = null;
