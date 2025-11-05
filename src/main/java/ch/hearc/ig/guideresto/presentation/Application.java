@@ -523,4 +523,5 @@ public class Application {
     private static String readString() {
         return scanner.nextLine();
     }
+
 }
