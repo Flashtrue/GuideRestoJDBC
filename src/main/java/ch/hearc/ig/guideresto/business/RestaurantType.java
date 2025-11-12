@@ -8,7 +8,7 @@ import jakarta.persistence.*;
  * @author cedric.baudet
  */
 @Entity
-@Table(name = "TYPES_RESTAURANTS")
+@Table(name = "TYPES_GASTRONOMIQUES")
 public class RestaurantType implements IBusinessObject {
     
     @Id
@@ -17,7 +17,8 @@ public class RestaurantType implements IBusinessObject {
     
     @Column(name = "LIBELLE")
     private String label;
-    
+
+    @Lob
     @Column(name = "DESCRIPTION")
     private String description;
 

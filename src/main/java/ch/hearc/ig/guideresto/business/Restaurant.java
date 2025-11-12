@@ -19,7 +19,8 @@ public class Restaurant implements IBusinessObject {
     
     @Column(name = "NOM")
     private String name;
-    
+
+    @Lob
     @Column(name = "DESCRIPTION")
     private String description;
     
