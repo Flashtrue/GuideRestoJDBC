@@ -17,5 +17,22 @@
         <class>ch.hearc.ig.guideresto.business.Localisation</class>
         <class>ch.hearc.ig.guideresto.business.Restaurant</class>
         <class>ch.hearc.ig.guideresto.business.RestaurantType</class>
+
+        <properties>
+            <!-- Connexion JDBC - adapter à ta base réelle -->
+            <property name="jakarta.persistence.jdbc.driver" value="oracle.jdbc.OracleDriver"/>
+            <property name="jakarta.persistence.jdbc.url" value="jdbc:oracle:thin:@db.ig.he-arc.ch:1521:ens"/>
+            <property name="jakarta.persistence.jdbc.user" value="cedric_gauch"/>
+            <property name="jakarta.persistence.jdbc.password" value="CEDRIC_GAUCH"/>
+
+            <!-- Hibernate -->
+
+            <property name="hibernate.hbm2ddl.auto" value="validate"/>
+
+            <!-- Test show_sql -->
+            <property name="hibernate.show_sql" value="true"/>
+            <property name="hibernate.format_sql" value="true"/>
+        </properties>
+
     </persistence-unit>
 </persistence>
