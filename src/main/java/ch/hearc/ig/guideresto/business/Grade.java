@@ -1,13 +1,27 @@
 package ch.hearc.ig.guideresto.business;
 
+import jakarta.persistence.*;
+
 /**
  * @author cedric.baudet
  */
+@Entity
+@Table(name = "NOTES")
 public class Grade implements IBusinessObject {
 
+    @Id
+    @Column(name = "NUMERO")
     private Integer id;
+
+    @Column(name = "NOTE")
     private Integer grade;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "FK_COMM")
     private CompleteEvaluation evaluation;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "FK_CRIT")
     private EvaluationCriteria criteria;
 
     public Grade() {
