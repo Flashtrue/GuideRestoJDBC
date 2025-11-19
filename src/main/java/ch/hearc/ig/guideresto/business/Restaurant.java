@@ -14,7 +14,7 @@ import java.util.Set;
 public class Restaurant implements IBusinessObject {
 
     @Id
-   @Column(name = "NUMERO")
+    @Column(name = "NUMERO")
     private Integer id;
     
     @Column(name = "NOM")
@@ -27,13 +27,14 @@ public class Restaurant implements IBusinessObject {
     @Column(name = "SITE_WEB")
     private String website;
     
-    @Transient // Ignore pour le moment (collections)
+    @OneToMany(mappedBy = "restaurant", fetch = FetchType.LAZY)
     private Set<Evaluation> evaluations;
     
-    @Transient // Ignore pour le moment (objet composite)
+    @Embedded
     private Localisation address;
     
-    @Transient // Ignore pour le moment (association)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "FK_TYPE")
     private RestaurantType type;
 
     public Restaurant() {

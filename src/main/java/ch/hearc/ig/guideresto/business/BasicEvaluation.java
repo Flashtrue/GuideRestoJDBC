@@ -1,6 +1,7 @@
 package ch.hearc.ig.guideresto.business;
 
-import jakarta.persistence.Entity;
+import ch.hearc.ig.guideresto.persistence.jpa.BooleanConverter;
+import jakarta.persistence.*;
 
 import java.util.Date;
 
@@ -11,7 +12,11 @@ import java.util.Date;
 @Table(name = "LIKES")
 public class BasicEvaluation extends Evaluation {
 
+    @Convert(converter = BooleanConverter.class)
+    @Column(name = "APPRECIATION")
     private Boolean likeRestaurant;
+
+    @Column(name = "ADRESSE_IP")
     private String ipAddress;
 
     public BasicEvaluation() {

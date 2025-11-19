@@ -1,8 +1,8 @@
 package ch.hearc.ig.guideresto.business;
 
+import jakarta.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
-import jakarta.persistence.*;
 
 /**
  * @author cedric.baudet
@@ -10,11 +10,11 @@ import jakarta.persistence.*;
 @Entity
 @Table(name = "TYPES_GASTRONOMIQUES")
 public class RestaurantType implements IBusinessObject {
-    
+
     @Id
     @Column(name = "NUMERO")
     private Integer id;
-    
+
     @Column(name = "LIBELLE")
     private String label;
 
@@ -22,7 +22,7 @@ public class RestaurantType implements IBusinessObject {
     @Column(name = "DESCRIPTION")
     private String description;
 
-    @Transient // Ignore pour le moment (association)
+    @OneToMany(mappedBy = "type", fetch = FetchType.LAZY)
     private Set<Restaurant> restaurants;
 
     public RestaurantType() {

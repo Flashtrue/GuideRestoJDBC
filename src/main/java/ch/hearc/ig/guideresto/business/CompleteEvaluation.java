@@ -5,7 +5,7 @@ package ch.hearc.ig.guideresto.business;
  */
 
 import jakarta.persistence.Entity;
-
+import jakarta.persistence.*;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -14,8 +14,14 @@ import java.util.Set;
 @Table(name = "COMMENTAIRES")
 public class CompleteEvaluation extends Evaluation {
 
+    @Lob
+    @Column(name = "COMMENTAIRE")
     private String comment;
+
+    @Column(name = "NOM_UTILISATEUR")
     private String username;
+
+    @OneToMany(fetch = FetchType.LAZY)
     private Set<Grade> grades;
 
     public CompleteEvaluation() {
