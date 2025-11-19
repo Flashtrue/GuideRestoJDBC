@@ -16,8 +16,7 @@ public class Grade implements IBusinessObject {
     @Column(name = "NOTE")
     private Integer grade;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "FK_COMM")
+    @Transient // Ignore pour le moment (association)
     private CompleteEvaluation evaluation;
 
     @ManyToOne(fetch = FetchType.LAZY)
