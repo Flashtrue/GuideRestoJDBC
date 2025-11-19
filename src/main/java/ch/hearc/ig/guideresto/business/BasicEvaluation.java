@@ -1,10 +1,14 @@
 package ch.hearc.ig.guideresto.business;
 
+import jakarta.persistence.Entity;
+
 import java.util.Date;
 
 /**
  * @author cedric.baudet
  */
+@Entity
+@Table(name = "LIKES")
 public class BasicEvaluation extends Evaluation {
 
     private Boolean likeRestaurant;
