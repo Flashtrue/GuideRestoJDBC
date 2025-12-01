@@ -9,6 +9,24 @@ import jakarta.persistence.*;
  */
 @Entity
 @Table (name = "VILLES")
+@NamedQueries({
+        @NamedQuery(
+                name = "City.findAll",
+                query = "SELECT c FROM City c ORDER BY c.cityName"
+        ),
+        @NamedQuery(
+                name = "City.findByZipCode",
+                query = "SELECT c FROM City c WHERE c.zipCode = :zipCode"
+        ),
+        @NamedQuery(
+                name = "City.findByCityName",
+                query = "SELECT c FROM City c WHERE UPPER(c.cityName) LIKE UPPER(:cityName)"
+        ),
+        @NamedQuery(
+                name = "City.deleteById",
+                query = "DELETE FROM City c WHERE c.id = :id"
+        )
+})
 public class City implements IBusinessObject {
     @Id
     @Column(name = "NUMERO")
