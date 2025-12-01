@@ -10,6 +10,28 @@ import java.util.Date;
  */
 @Entity
 @Table(name = "LIKES")
+@NamedQueries({
+        @NamedQuery(
+                name = "BasicEvaluation.findAll",
+                query = "SELECT b FROM BasicEvaluation b ORDER BY b.visitDate DESC"
+        ),
+        @NamedQuery(
+                name = "BasicEvaluation.findByRestaurant",
+                query = "SELECT b FROM BasicEvaluation b WHERE b.restaurant = :restaurant"
+        ),
+        @NamedQuery(
+                name = "BasicEvaluation.findByLikeRestaurant",
+                query = "SELECT b FROM BasicEvaluation b WHERE b.likeRestaurant = :likeRestaurant"
+        ),
+        @NamedQuery(
+                name = "BasicEvaluation.findByIpAddress",
+                query = "SELECT b FROM BasicEvaluation b WHERE b.ipAddress = :ipAddress"
+        ),
+        @NamedQuery(
+                name = "BasicEvaluation.deleteById",
+                query = "DELETE FROM BasicEvaluation b WHERE b.id = :id"
+        )
+})
 public class BasicEvaluation extends Evaluation {
 
     @Convert(converter = BooleanConverter.class)

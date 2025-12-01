@@ -9,6 +9,20 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "TYPES_GASTRONOMIQUES")
+@NamedQueries({
+        @NamedQuery(
+                name = "RestaurantType.findAll",
+                query = "SELECT rt FROM RestaurantType rt ORDER BY rt.label"
+        ),
+        @NamedQuery(
+                name = "RestaurantType.findByLabel",
+                query = "SELECT rt FROM RestaurantType rt WHERE UPPER(rt.label) LIKE UPPER(:label)"
+        ),
+        @NamedQuery(
+                name = "RestaurantType.deleteById",
+                query = "DELETE FROM RestaurantType rt WHERE rt.id = :id"
+        )
+})
 public class RestaurantType implements IBusinessObject {
 
     @Id

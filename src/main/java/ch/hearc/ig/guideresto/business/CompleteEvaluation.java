@@ -12,6 +12,24 @@ import java.util.Set;
 
 @Entity
 @Table(name = "COMMENTAIRES")
+@NamedQueries({
+        @NamedQuery(
+                name = "CompleteEvaluation.findAll",
+                query = "SELECT c FROM CompleteEvaluation c ORDER BY c.visitDate DESC"
+        ),
+        @NamedQuery(
+                name = "CompleteEvaluation.findByRestaurant",
+                query = "SELECT c FROM CompleteEvaluation c WHERE c.restaurant = :restaurant"
+        ),
+        @NamedQuery(
+                name = "CompleteEvaluation.findByUsername",
+                query = "SELECT c FROM CompleteEvaluation c WHERE UPPER(c.username) LIKE UPPER(:username)"
+        ),
+        @NamedQuery(
+                name = "CompleteEvaluation.deleteById",
+                query = "DELETE FROM CompleteEvaluation c WHERE c.id = :id"
+        )
+})
 public class CompleteEvaluation extends Evaluation {
 
     @Lob

@@ -11,6 +11,28 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "RESTAURANTS")
+@NamedQueries({
+        @NamedQuery(
+                name = "Restaurant.findAll",
+                query = "SELECT r FROM Restaurant r ORDER BY r.name"
+        ),
+        @NamedQuery(
+                name = "Restaurant.findByName",
+                query = "SELECT r FROM Restaurant r WHERE UPPER(r.name) LIKE UPPER(:name)"
+        ),
+        @NamedQuery(
+                name = "Restaurant.findByType",
+                query = "SELECT r FROM Restaurant r WHERE r.type = :type"
+        ),
+        @NamedQuery(
+                name = "Restaurant.findByCity",
+                query = "SELECT r FROM Restaurant r WHERE r.address.city = :city"
+        ),
+        @NamedQuery(
+                name = "Restaurant.deleteById",
+                query = "DELETE FROM Restaurant r WHERE r.id = :id"
+        )
+})
 public class Restaurant implements IBusinessObject {
 
     @Id
