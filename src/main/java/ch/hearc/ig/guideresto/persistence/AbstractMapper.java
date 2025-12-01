@@ -1,137 +1,106 @@
 package ch.hearc.ig.guideresto.persistence;
 
 import ch.hearc.ig.guideresto.business.IBusinessObject;
+import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class AbstractMapper<T extends IBusinessObject> {
 
-    private final Map<Integer, T> objectCache = new HashMap<>();
-
     protected static final Logger logger = LogManager.getLogger();
-    
+    private final Class<T> entityClass;
 
-    public abstract T findById(int id);
-    public abstract Set<T> findAll();
-    public abstract T create(T object);
-    public abstract boolean update(T object);
-    public abstract boolean delete(T object);
-    public abstract boolean deleteById(int id);
+    protected AbstractMapper(Class<T> entityClass) {
+        this.entityClass = entityClass;
+    }
 
-    protected abstract String getSequenceQuery();
-    protected abstract String getExistsQuery();
-    protected abstract String getCountQuery();
+    protected EntityManager em() {
+        return JpaUtils.getEntityManager();
+    }
 
-    /**
-     * Vérifie si un objet avec l'ID donné existe.
-     * @param id the ID to check
-     * @return true si l'objet existe, false sinon
-     */
+    public T findById(int id) {
+        return em().find(entityClass, id);
+    }
+
+    public Set<T> findAll() {
+        TypedQuery<T> query = em().createQuery(
+                "SELECT e FROM " + entityClass.getSimpleName() + " e", entityClass);
+        return new LinkedHashSet<>(query.getResultList());
+    }
+
+    public T create(T object) {
+        if (object == null) {
+            return null;
+        }
+        try {
+            JpaUtils.inTransaction(em -> em.persist(object));
+            return object;
+        } catch (RuntimeException ex) {
+            logger.error("JPA persist error", ex);
+            return null;
+        }
+    }
+
+    public boolean update(T object) {
+        if (object == null || object.getId() == null) {
+            return false;
+        }
+        try {
+            JpaUtils.inTransaction(em -> em.merge(object));
+            return true;
+        } catch (RuntimeException ex) {
+            logger.error("JPA merge error", ex);
+            return false;
+        }
+    }
+
+    public boolean delete(T object) {
+        if (object == null || object.getId() == null) {
+            return false;
+        }
+        try {
+            JpaUtils.inTransaction(em -> {
+                T managed = em.contains(object) ? object : em.merge(object);
+                em.remove(managed);
+            });
+            return true;
+        } catch (RuntimeException ex) {
+            logger.error("JPA remove error", ex);
+            return false;
+        }
+    }
+
+    public boolean deleteById(int id) {
+        AtomicBoolean deleted = new AtomicBoolean(false);
+        try {
+            JpaUtils.inTransaction(em -> {
+                T entity = em.find(entityClass, id);
+                if (entity != null) {
+                    em.remove(entity);
+                    deleted.set(true);
+                }
+            });
+            return deleted.get();
+        } catch (RuntimeException ex) {
+            logger.error("JPA remove error", ex);
+            return false;
+        }
+    }
+
     public boolean exists(int id) {
-        Connection connection = ConnectionUtils.getConnection();
-
-        try (PreparedStatement stmt = connection.prepareStatement(getExistsQuery())) {
-            stmt.setInt(1, id);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                return rs.next();
-            }
-        } catch (SQLException ex) {
-            logger.error("SQLException: {}", ex.getMessage());
-        }
-        return false;
+        return findById(id) != null;
     }
 
-    /**
-     * Compte le nombre d'objets en base de données.
-     * @return
-     */
     public int count() {
-        Connection connection = ConnectionUtils.getConnection();
-
-        try (PreparedStatement stmt = connection.prepareStatement(getCountQuery());
-             ResultSet rs = stmt.executeQuery()) {
-
-            if (rs.next()) {
-                return rs.getInt(1);
-            }
-            return 0;
-        } catch (SQLException ex) {
-            logger.error("SQLException: {}", ex.getMessage());
-            return 0;
-        }
-    }
-
-    /**
-     * Obtient la valeur de la séquence actuelle en base de données
-     * @return Le nombre de villes
-     * @En cas d'erreur SQL
-     */
-    protected Integer getSequenceValue() {
-        Connection connection = ConnectionUtils.getConnection();
-
-        try (PreparedStatement stmt = connection.prepareStatement(getSequenceQuery());
-             ResultSet rs = stmt.executeQuery()) {
-
-            if (rs.next()) {
-                return rs.getInt(1);
-            }
-            return 0;
-        } catch (SQLException ex) {
-            logger.error("SQLException: {}", ex.getMessage());
-            return 0;
-        }
-    }
-
-    /**
-     * Vérifie si le cache est actuellement vide
-     * @return true si le cache ne contient aucun objet, false sinon
-     */
-    protected boolean isCacheEmpty() {
-        return objectCache.isEmpty();
-    }
-
-    /**
-     * Vide le cache
-     */
-    protected void resetCache() {
-        objectCache.clear();
-    }
-
-    /**
-     * Ajoute un objet au cache
-     * @param objet l'objet à ajouter
-     */
-    protected void addToCache(T objet) {
-        if (objet != null && objet.getId() != null) {
-            objectCache.put(objet.getId(), objet);
-        }
-    }
-
-    /**
-     * Retire un objet du cache
-     * @param id l'ID de l'objet à retirer du cache
-     */
-    protected void removeFromCache(Integer id) {
-        if (id != null) {
-            objectCache.remove(id);
-        }
-    }
-
-    /**
-     * Récupère un objet du cache par son ID
-     * @param id l'ID de l'objet à récupérer
-     * @return l'objet s'il existe dans le cache, null sinon
-     */
-    protected T getFromCache(Integer id) {
-        return id != null ? objectCache.get(id) : null;
+        TypedQuery<Long> query = em().createQuery(
+                "SELECT COUNT(e) FROM " + entityClass.getSimpleName() + " e", Long.class);
+        Long value = query.getSingleResult();
+        return value != null ? value.intValue() : 0;
     }
 }

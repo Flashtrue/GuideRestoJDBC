@@ -1,12 +1,5 @@
 package ch.hearc.ig.guideresto.business;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.SequenceGenerator;
-import jakarta.persistence.Table;
 import jakarta.persistence.*;
 
 /**
@@ -14,24 +7,6 @@ import jakarta.persistence.*;
  */
 @Entity
 @Table(name = "CRITERES_EVALUATION")
-@NamedQueries({
-        @NamedQuery(
-                name = "CompleteEvaluation.findAll",
-                query = "SELECT c FROM CompleteEvaluation c ORDER BY c.visitDate DESC"
-        ),
-        @NamedQuery(
-                name = "CompleteEvaluation.findByRestaurant",
-                query = "SELECT c FROM CompleteEvaluation c WHERE c.restaurant = :restaurant"
-        ),
-        @NamedQuery(
-                name = "CompleteEvaluation.findByUsername",
-                query = "SELECT c FROM CompleteEvaluation c WHERE UPPER(c.username) LIKE UPPER(:username)"
-        ),
-        @NamedQuery(
-                name = "CompleteEvaluation.deleteById",
-                query = "DELETE FROM CompleteEvaluation c WHERE c.id = :id"
-        )
-})
 public class EvaluationCriteria implements IBusinessObject {
     
     @Id

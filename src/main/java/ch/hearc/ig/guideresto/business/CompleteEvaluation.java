@@ -54,7 +54,7 @@ public class CompleteEvaluation extends Evaluation {
         super(id, visitDate, restaurant);
         this.comment = comment;
         this.username = username;
-        this.grades = new HashSet();
+        this.grades = new HashSet<>();
     }
 
     public String getComment() {

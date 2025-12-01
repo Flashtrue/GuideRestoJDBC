@@ -1,158 +1,40 @@
 package ch.hearc.ig.guideresto.persistence;
 
 import ch.hearc.ig.guideresto.business.City;
+import jakarta.persistence.TypedQuery;
 
-import java.sql.*;
-import java.util.HashSet;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class CityMapper extends AbstractMapper<City> {
 
-    @Override
-    public City findById(int id) {
-        City cachedCity = getFromCache(id);
-        if (cachedCity != null) {
-            return cachedCity;
-        }
-
-        Connection connection = ConnectionUtils.getConnection();
-        String query = "SELECT * FROM villes WHERE numero = ?";
-
-        try (PreparedStatement stmt = connection.prepareStatement(query)) {
-            stmt.setInt(1, id);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    City city = mapResultSetToCity(rs);
-                    addToCache(city);
-                    return city;
-                }
-            }
-        } catch (SQLException ex) {
-            logger.error("Erreur lors de la recherche de la ville avec l'id: " + id, ex);
-        }
-        return null;
+    public CityMapper() {
+        super(City.class);
     }
 
     @Override
     public Set<City> findAll() {
-        Set<City> cities = new HashSet<>();
-        Connection connection = ConnectionUtils.getConnection();
-        String query = "SELECT * FROM villes";
+        TypedQuery<City> query = em().createNamedQuery("City.findAll", City.class);
+        return new LinkedHashSet<>(query.getResultList());
+    }
 
-        try (PreparedStatement stmt = connection.prepareStatement(query);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                City city = mapResultSetToCity(rs);
-                addToCache(city);
-                cities.add(city);
-            }
-        } catch (SQLException ex) {
-            logger.error("Erreur lors de la récupération de toutes les villes", ex);
+    public City findByZipCode(String zipCode) {
+        if (zipCode == null) {
+            return null;
         }
-        return cities;
+        TypedQuery<City> query = em().createNamedQuery("City.findByZipCode", City.class);
+        query.setParameter("zipCode", zipCode);
+        return query.getResultStream().findFirst().orElse(null);
     }
 
-    @Override
-    public City create(City city) {
-        Connection connection = ConnectionUtils.getConnection();
-        String query = "INSERT INTO villes (code_postal, nom_ville) VALUES (?, ?)";
-
-        try (PreparedStatement stmt = connection.prepareStatement(query, new String[]{"NUMERO"})) {
-            stmt.setString(1, city.getZipCode());
-            stmt.setString(2, city.getCityName());
-
-            int affectedRows = stmt.executeUpdate();
-            if (affectedRows > 0) {
-                try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        try {
-                            city.setId(generatedKeys.getInt(1)); 
-                        } catch (SQLException e) {
-                            try {
-                                city.setId(generatedKeys.getInt("numero")); 
-                            } catch (SQLException e2) {
-                                try {
-                                    city.setId(generatedKeys.getInt("NUMERO")); 
-                                } catch (SQLException e3) {
-                                    logger.error("Impossible de récupérer l'ID généré", e3);
-                                    return null;
-                                }
-                            }
-                        }
-                        addToCache(city);
-                        return city;
-                    }
-                }
-            }
-        } catch (SQLException ex) {
-            logger.error("Erreur lors de la création de la ville: " + city, ex);
+    public Set<City> findByCityName(String cityName) {
+        if (cityName == null) {
+            return Collections.emptySet();
         }
-        return null;
-    }
-    @Override
-    public boolean update(City city) {
-        Connection connection = ConnectionUtils.getConnection();
-        String query = "UPDATE villes SET code_postal = ?, nom_ville = ? WHERE numero = ?";
-
-        try (PreparedStatement stmt = connection.prepareStatement(query)) {
-            stmt.setString(1, city.getZipCode());
-            stmt.setString(2, city.getCityName());
-            stmt.setInt(3, city.getId());
-
-            int affectedRows = stmt.executeUpdate();
-            if (affectedRows > 0) {
-                addToCache(city);
-                return true;
-            }
-        } catch (SQLException ex) {
-            logger.error("Erreur lors de la mise à jour de la ville: " + city, ex);
-        }
-        return false;
-    }
-
-    @Override
-    public boolean delete(City city) {
-        return deleteById(city.getId());
-    }
-
-    @Override
-    public boolean deleteById(int id) {
-        Connection connection = ConnectionUtils.getConnection();
-        String query = "DELETE FROM villes WHERE numero = ?";
-
-        try (PreparedStatement stmt = connection.prepareStatement(query)) {
-            stmt.setInt(1, id);
-            int affectedRows = stmt.executeUpdate();
-            if (affectedRows > 0) {
-                removeFromCache(id);
-                return true;
-            }
-        } catch (SQLException ex) {
-            logger.error("Erreur lors de la suppression de la ville avec l'id: " + id, ex);
-        }
-        return false;
-    }
-
-    @Override
-    protected String getSequenceQuery() {
-        return "SELECT SEQ_VILLES.CURRVAL FROM DUAL";
-    }
-
-    @Override
-    protected String getExistsQuery() {
-        return "SELECT 1 FROM villes WHERE numero = ?";
-    }
-
-    @Override
-    protected String getCountQuery() {
-        return "SELECT COUNT(*) FROM villes";
-    }
-
-    private City mapResultSetToCity(ResultSet rs) throws SQLException {
-        City city = new City();
-        city.setId(rs.getInt("numero"));
-        city.setZipCode(rs.getString("code_postal"));
-        city.setCityName(rs.getString("nom_ville"));
-        return city;
+        String pattern = "%" + cityName.trim() + "%";
+        TypedQuery<City> query = em().createNamedQuery("City.findByCityName", City.class);
+        query.setParameter("cityName", pattern);
+        return new LinkedHashSet<>(query.getResultList());
     }
 }

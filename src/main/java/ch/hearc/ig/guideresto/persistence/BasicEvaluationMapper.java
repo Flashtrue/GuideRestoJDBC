@@ -3,208 +3,49 @@ package ch.hearc.ig.guideresto.persistence;
 import ch.hearc.ig.guideresto.business.BasicEvaluation;
 import ch.hearc.ig.guideresto.business.Restaurant;
 
-import java.sql.*;
-import java.util.HashSet;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
-    private final RestaurantMapper restaurantMapper;
-
     public BasicEvaluationMapper() {
-        super();
-        this.restaurantMapper = new RestaurantMapper();
-    }
-
-    @Override
-    public BasicEvaluation findById(int id) {
-        BasicEvaluation cachedEvaluation = getFromCache(id);
-        if (cachedEvaluation != null) {
-            return cachedEvaluation;
-        }
-        
-        Connection connection = ConnectionUtils.getConnection();
-        String query = "SELECT * FROM LIKES WHERE numero = ?";
-
-        try (PreparedStatement stmt = connection.prepareStatement(query)) {
-            stmt.setInt(1, id);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    BasicEvaluation evaluation = mapResultSetToBasicEvaluation(rs);
-                    addToCache(evaluation);
-                    return evaluation;
-                }
-            }
-        } catch (SQLException ex) {
-            logger.error("Erreur lors de la recherche de l'appréciation avec l'id: " + id, ex);
-        }
-        return null;
+        super(BasicEvaluation.class);
     }
 
     @Override
     public Set<BasicEvaluation> findAll() {
-        Set<BasicEvaluation> evaluations = new HashSet<>();
-        Connection connection = ConnectionUtils.getConnection();
-        String query = "SELECT * FROM LIKES";
-
-        try (PreparedStatement stmt = connection.prepareStatement(query);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                BasicEvaluation evaluation = mapResultSetToBasicEvaluation(rs);
-                addToCache(evaluation);
-                evaluations.add(evaluation);
-            }
-        } catch (SQLException ex) {
-            logger.error("Erreur lors de la récupération de toutes les appréciations", ex);
-        }
-        return evaluations;
-    }
-
-    @Override
-    public BasicEvaluation create(BasicEvaluation evaluation) {
-        Connection connection = ConnectionUtils.getConnection();
-        String query = "INSERT INTO LIKES (APPRECIATION, DATE_EVAL, FK_REST, ADRESSE_IP) VALUES (?, ?, ?, ?)";
-
-        try (PreparedStatement stmt = connection.prepareStatement(query, new String[]{"NUMERO"})) {
-            stmt.setString(1, evaluation.getLikeRestaurant() ? "T" : "F");
-
-            if (evaluation.getVisitDate() != null) {
-                stmt.setDate(2, new java.sql.Date(evaluation.getVisitDate().getTime()));
-            } else {
-                stmt.setNull(2, Types.DATE);
-            }
-
-            if (evaluation.getRestaurant() != null) {
-                stmt.setInt(3, evaluation.getRestaurant().getId());
-            } else {
-                stmt.setNull(3, Types.INTEGER);
-            }
-
-            stmt.setString(4, evaluation.getIpAddress());
-
-            int affectedRows = stmt.executeUpdate();
-            if (affectedRows > 0) {
-                try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        evaluation.setId(generatedKeys.getInt(1));
-                        addToCache(evaluation);
-                        return evaluation;
-                    }
-                }
-            }
-        } catch (SQLException ex) {
-            logger.error("Erreur lors de la création de l'appréciation", ex);
-        }
-        return null;
-    }
-
-    @Override
-    public boolean update(BasicEvaluation evaluation) {
-        Connection connection = ConnectionUtils.getConnection();
-        String query = "UPDATE LIKES SET appreciation = ?, date_eval = ?, fk_rest = ?, adresse_ip = ? WHERE numero = ?";
-
-        try (PreparedStatement stmt = connection.prepareStatement(query)) {
-            stmt.setString(1, evaluation.getLikeRestaurant() ? "T" : "F");
-
-            if (evaluation.getVisitDate() != null) {
-                stmt.setDate(2, new java.sql.Date(evaluation.getVisitDate().getTime()));
-            } else {
-                stmt.setNull(2, Types.DATE);
-            }
-
-            if (evaluation.getRestaurant() != null) {
-                stmt.setInt(3, evaluation.getRestaurant().getId());
-            } else {
-                stmt.setNull(3, Types.INTEGER);
-            }
-
-            stmt.setString(4, evaluation.getIpAddress());
-            stmt.setInt(5, evaluation.getId());
-
-            int affectedRows = stmt.executeUpdate();
-            if (affectedRows > 0) {
-                addToCache(evaluation);
-                return true;
-            }
-        } catch (SQLException ex) {
-            logger.error("Erreur lors de la mise à jour de l'appréciation ID: " + evaluation.getId(), ex);
-        }
-        return false;
-    }
-
-    @Override
-    public boolean delete(BasicEvaluation evaluation) {
-        return deleteById(evaluation.getId());
-    }
-
-    @Override
-    public boolean deleteById(int id) {
-        Connection connection = ConnectionUtils.getConnection();
-        String query = "DELETE FROM LIKES WHERE numero = ?";
-
-        try (PreparedStatement stmt = connection.prepareStatement(query)) {
-            stmt.setInt(1, id);
-            int affectedRows = stmt.executeUpdate();
-            if (affectedRows > 0) {
-                removeFromCache(id);
-                return true;
-            }
-        } catch (SQLException ex) {
-            logger.error("Erreur lors de la suppression de l'appréciation ID: " + id, ex);
-        }
-        return false;
-    }
-
-    @Override
-    protected String getSequenceQuery() {
-        return "SELECT seq_eval.currval FROM dual";
-    }
-
-    @Override
-    protected String getExistsQuery() {
-        return "SELECT 1 FROM LIKES WHERE numero = ?";
-    }
-
-    @Override
-    protected String getCountQuery() {
-        return "SELECT COUNT(*) FROM LIKES";
-    }
-
-    private BasicEvaluation mapResultSetToBasicEvaluation(ResultSet rs) throws SQLException {
-        BasicEvaluation evaluation = new BasicEvaluation();
-        evaluation.setId(rs.getInt("NUMERO"));
-        
-        String appreciationChar = rs.getString("APPRECIATION");
-        evaluation.setLikeRestaurant("T".equalsIgnoreCase(appreciationChar));
-        
-        evaluation.setVisitDate(rs.getDate("DATE_EVAL"));
-        evaluation.setIpAddress(rs.getString("ADRESSE_IP"));
-
-        int restaurantId = rs.getInt("FK_REST");
-        if (!rs.wasNull()) {
-            Restaurant restaurant = restaurantMapper.findById(restaurantId);
-            evaluation.setRestaurant(restaurant);
-        }
-
-        return evaluation;
+        return new LinkedHashSet<>(em()
+                .createNamedQuery("BasicEvaluation.findAll", BasicEvaluation.class)
+                .getResultList());
     }
 
     public Set<BasicEvaluation> findByRestaurant(Restaurant restaurant) {
-        Set<BasicEvaluation> evaluations = new HashSet<>();
-        Connection connection = ConnectionUtils.getConnection();
-        String query = "SELECT * FROM LIKES WHERE fk_rest = ?";
-
-        try (PreparedStatement stmt = connection.prepareStatement(query)) {
-            stmt.setInt(1, restaurant.getId());
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    BasicEvaluation evaluation = mapResultSetToBasicEvaluation(rs);
-                    addToCache(evaluation);
-                    evaluations.add(evaluation);
-                }
-            }
-        } catch (SQLException ex) {
-            logger.error("Erreur lors de la recherche des appréciations pour le restaurant ID: " + restaurant.getId(), ex);
+        if (restaurant == null) {
+            return Collections.emptySet();
         }
-        return evaluations;
+        return new LinkedHashSet<>(em()
+                .createNamedQuery("BasicEvaluation.findByRestaurant", BasicEvaluation.class)
+                .setParameter("restaurant", restaurant)
+                .getResultList());
+    }
+
+    public Set<BasicEvaluation> findByLikeRestaurant(Boolean likeRestaurant) {
+        if (likeRestaurant == null) {
+            return Collections.emptySet();
+        }
+        return new LinkedHashSet<>(em()
+                .createNamedQuery("BasicEvaluation.findByLikeRestaurant", BasicEvaluation.class)
+                .setParameter("likeRestaurant", likeRestaurant)
+                .getResultList());
+    }
+
+    public Set<BasicEvaluation> findByIpAddress(String ipAddress) {
+        if (ipAddress == null) {
+            return Collections.emptySet();
+        }
+        return new LinkedHashSet<>(em()
+                .createNamedQuery("BasicEvaluation.findByIpAddress", BasicEvaluation.class)
+                .setParameter("ipAddress", ipAddress)
+                .getResultList());
     }
 }
