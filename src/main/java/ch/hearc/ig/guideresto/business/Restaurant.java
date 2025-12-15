@@ -36,6 +36,8 @@ import java.util.Set;
 public class Restaurant implements IBusinessObject {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "restaurant_seq_gen")
+    @SequenceGenerator(name = "restaurant_seq_gen", sequenceName = "SEQ_RESTAURANTS", allocationSize = 1)
     @Column(name = "NUMERO")
     private Integer id;
     

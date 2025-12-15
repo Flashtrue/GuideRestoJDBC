@@ -12,7 +12,7 @@ public class Localisation {
     private String street;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "FK_VILLE")
+    @JoinColumn(name = "FK_VILL")
     private City city;
 
     public Localisation() {

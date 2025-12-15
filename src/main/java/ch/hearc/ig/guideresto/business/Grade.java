@@ -32,6 +32,8 @@ import jakarta.persistence.*;
 public class Grade implements IBusinessObject {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "grade_seq_gen")
+    @SequenceGenerator(name = "grade_seq_gen", sequenceName = "SEQ_NOTES", allocationSize = 1)
     @Column(name = "NUMERO")
     private Integer id;
 

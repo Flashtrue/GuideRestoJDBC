@@ -24,12 +24,12 @@ public class BasicEvaluationService extends AbstractService {
 
     public BasicEvaluation create(Restaurant restaurant, boolean like, String ipAddress) {
         try {
-            return executeInTransactionWithResult(em -> {
-                BasicEvaluation evaluation = new BasicEvaluation(null, new Date(), restaurant, like, ipAddress);
-                em.persist(evaluation);
-                restaurant.getEvaluations().add(evaluation);
-                return evaluation;
-            });
+            BasicEvaluation evaluation = new BasicEvaluation(null, new Date(), restaurant, like, ipAddress);
+            BasicEvaluation created = basicEvaluationMapper.create(evaluation);
+            if (created != null) {
+                restaurant.getEvaluations().add(created);
+            }
+            return created;
         } catch (Exception e) {
             logger.error("Erreur lors de la création de l'évaluation basique", e);
             return null;

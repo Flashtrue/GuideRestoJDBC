@@ -23,15 +23,7 @@ public class RestaurantTypeService extends AbstractService {
     }
 
     public RestaurantType create(RestaurantType type) {
-        try {
-            return executeInTransactionWithResult(em -> {
-                em.persist(type);
-                return type;
-            });
-        } catch (Exception e) {
-            logger.error("Erreur lors de la création du type de restaurant", e);
-            return null;
-        }
+        return restaurantTypeMapper.create(type);
     }
 
     public boolean update(RestaurantType type) {

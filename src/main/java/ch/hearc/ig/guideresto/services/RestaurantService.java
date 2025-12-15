@@ -38,28 +38,24 @@ public class RestaurantService extends AbstractService {
     }
 
     /**
-     * Transaction atomique : Restaurant + City (création si nécessaire) + Address
+     * Transaction atomique : Restaurant + City (création si nécessaire)
      */
     public Restaurant create(Restaurant restaurant) {
         try {
-            return executeInTransactionWithResult(em -> {
-                // 1. Gestion de la ville
-                City city = restaurant.getAddress().getCity();
-                if (city.getId() == null) {
-                    City existingCity = cityMapper.findByZipCode(city.getZipCode());
-                    if (existingCity != null) {
-                        restaurant.getAddress().setCity(existingCity);
-                    } else {
-                        em.persist(city);
-                    }
+            // 1. Gestion de la ville
+            City city = restaurant.getAddress().getCity();
+            if (city.getId() == null) {
+                City existingCity = cityMapper.findByZipCode(city.getZipCode());
+                if (existingCity != null) {
+                    restaurant.getAddress().setCity(existingCity);
+                } else {
+                    City createdCity = cityMapper.create(city);
+                    restaurant.getAddress().setCity(createdCity);
                 }
+            }
 
-                // 2. Persistance de l'adresse et du restaurant
-                em.persist(restaurant.getAddress());
-                em.persist(restaurant);
-
-                return restaurant;
-            });
+            // 2. Persistance du restaurant (Localisation est @Embeddable, donc pas de persist séparé)
+            return restaurantMapper.create(restaurant);
         } catch (Exception e) {
             logger.error("Erreur lors de la création du restaurant", e);
             return null;

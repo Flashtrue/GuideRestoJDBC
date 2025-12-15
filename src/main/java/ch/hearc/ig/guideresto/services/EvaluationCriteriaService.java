@@ -18,15 +18,7 @@ public class EvaluationCriteriaService extends AbstractService {
     }
 
     public EvaluationCriteria create(EvaluationCriteria criteria) {
-        try {
-            return executeInTransactionWithResult(em -> {
-                em.persist(criteria);
-                return criteria;
-            });
-        } catch (Exception e) {
-            logger.error("Erreur lors de la création du critère d'évaluation", e);
-            return null;
-        }
+        return evaluationCriteriaMapper.create(criteria);
     }
 
     public boolean update(EvaluationCriteria criteria) {

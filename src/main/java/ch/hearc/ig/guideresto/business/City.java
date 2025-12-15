@@ -29,6 +29,8 @@ import jakarta.persistence.*;
 })
 public class City implements IBusinessObject {
     @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "city_seq_gen")
+    @SequenceGenerator(name = "city_seq_gen", sequenceName = "SEQ_VILLES", allocationSize = 1)
     @Column(name = "NUMERO")
     private Integer id;
     @Column (name = "CODE_POSTAL")

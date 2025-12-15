@@ -5,11 +5,14 @@ import java.util.Date;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.SequenceGenerator;
 
 /**
  * @author cedric.baudet
@@ -20,6 +23,8 @@ import jakarta.persistence.ManyToOne;
 public abstract class Evaluation implements IBusinessObject {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "eval_seq_gen")
+    @SequenceGenerator(name = "eval_seq_gen", sequenceName = "SEQ_EVAL", allocationSize = 1)
     @Column(name = "NUMERO")
     private Integer id;
 

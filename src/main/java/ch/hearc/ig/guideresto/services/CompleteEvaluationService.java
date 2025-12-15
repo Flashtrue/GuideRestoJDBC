@@ -11,6 +11,7 @@ public class CompleteEvaluationService extends AbstractService {
 
     private final CompleteEvaluationMapper completeEvaluationMapper = new CompleteEvaluationMapper();
     private final GradeMapper gradeMapper = new GradeMapper();
+    private final GradeService gradeService = new GradeService();
 
     public Set<CompleteEvaluation> getAll() {
         return completeEvaluationMapper.findAll();
@@ -29,24 +30,28 @@ public class CompleteEvaluationService extends AbstractService {
      */
     public CompleteEvaluation create(Restaurant restaurant, String username, String comment, Set<Grade> grades) {
         try {
-            return executeInTransactionWithResult(em -> {
-                // 1. Création de l'évaluation
-                CompleteEvaluation evaluation = new CompleteEvaluation(null, new Date(), restaurant, comment, username);
-                em.persist(evaluation);
+            // 1. Création de l'évaluation
+            CompleteEvaluation evaluation = new CompleteEvaluation(null, new Date(), restaurant, comment, username);
+            CompleteEvaluation created = completeEvaluationMapper.create(evaluation);
+            
+            if (created == null) {
+                return null;
+            }
 
-                // 2. Création de toutes les notes
-                Set<Grade> createdGrades = new HashSet<>();
-                for (Grade grade : grades) {
-                    grade.setEvaluation(evaluation);
-                    em.persist(grade);
-                    createdGrades.add(grade);
+            // 2. Création de toutes les notes
+            Set<Grade> createdGrades = new HashSet<>();
+            for (Grade grade : grades) {
+                grade.setEvaluation(created);
+                Grade createdGrade = gradeService.createGrade(grade);
+                if (createdGrade != null) {
+                    createdGrades.add(createdGrade);
                 }
+            }
 
-                evaluation.setGrades(createdGrades);
-                restaurant.getEvaluations().add(evaluation);
+            created.setGrades(createdGrades);
+            restaurant.getEvaluations().add(created);
 
-                return evaluation;
-            });
+            return created;
         } catch (Exception e) {
             logger.error("Erreur lors de la création de l'évaluation complète", e);
             return null;

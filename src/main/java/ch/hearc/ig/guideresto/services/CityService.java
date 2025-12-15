@@ -26,15 +26,7 @@ public class CityService extends AbstractService {
     }
 
     public City create(City city) {
-        try {
-            return executeInTransactionWithResult(em -> {
-                em.persist(city);
-                return city;
-            });
-        } catch (Exception e) {
-            logger.error("Erreur lors de la création de la ville", e);
-            return null;
-        }
+        return cityMapper.create(city);
     }
 
     public boolean update(City city) {

@@ -10,6 +10,8 @@ import jakarta.persistence.*;
 public class EvaluationCriteria implements IBusinessObject {
     
     @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "criteria_seq_gen")
+    @SequenceGenerator(name = "criteria_seq_gen", sequenceName = "SEQ_CRITERES_EVALUATION", allocationSize = 1)
     @Column(name = "NUMERO")
     private Integer id;
     

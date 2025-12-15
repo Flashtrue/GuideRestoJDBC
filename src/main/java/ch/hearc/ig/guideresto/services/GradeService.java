@@ -26,15 +26,7 @@ public class GradeService extends AbstractService {
     }
 
     public Grade createGrade(Grade grade) {
-        try {
-            return executeInTransactionWithResult(em -> {
-                em.persist(grade);
-                return grade;
-            });
-        } catch (Exception e) {
-            logger.error("Erreur lors de la création de la note", e);
-            return null;
-        }
+        return gradeMapper.create(grade);
     }
 
     public boolean update(Grade grade) {

@@ -35,7 +35,7 @@ import java.util.Date;
 public class BasicEvaluation extends Evaluation {
 
     @Convert(converter = BooleanConverter.class)
-    @Column(name = "APPRECIATION")
+    @Column(name = "APPRECIATION", columnDefinition = "CHAR(1)")
     private Boolean likeRestaurant;
 
     @Column(name = "ADRESSE_IP")
