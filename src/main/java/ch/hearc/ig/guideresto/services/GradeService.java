@@ -30,25 +30,10 @@ public class GradeService extends AbstractService {
     }
 
     public boolean update(Grade grade) {
-        try {
-            executeInTransaction(em -> em.merge(grade));
-            return true;
-        } catch (Exception e) {
-            logger.error("Erreur lors de la mise à jour de la note", e);
-            return false;
-        }
+        return gradeMapper.update(grade);
     }
 
     public boolean delete(Grade grade) {
-        try {
-            executeInTransaction(em -> {
-                Grade managed = em.contains(grade) ? grade : em.merge(grade);
-                em.remove(managed);
-            });
-            return true;
-        } catch (Exception e) {
-            logger.error("Erreur lors de la suppression de la note", e);
-            return false;
-        }
+        return gradeMapper.delete(grade);
     }
 }

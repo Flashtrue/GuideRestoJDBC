@@ -37,26 +37,11 @@ public class BasicEvaluationService extends AbstractService {
     }
 
     public boolean update(BasicEvaluation evaluation) {
-        try {
-            executeInTransaction(em -> em.merge(evaluation));
-            return true;
-        } catch (Exception e) {
-            logger.error("Erreur lors de la mise à jour de l'évaluation", e);
-            return false;
-        }
+        return basicEvaluationMapper.update(evaluation);
     }
 
     public boolean delete(BasicEvaluation evaluation) {
-        try {
-            executeInTransaction(em -> {
-                BasicEvaluation managed = em.contains(evaluation) ? evaluation : em.merge(evaluation);
-                em.remove(managed);
-            });
-            return true;
-        } catch (Exception e) {
-            logger.error("Erreur lors de la suppression de l'évaluation", e);
-            return false;
-        }
+        return basicEvaluationMapper.delete(evaluation);
     }
 
     public int countLikes(Restaurant restaurant, boolean likeRestaurant) {

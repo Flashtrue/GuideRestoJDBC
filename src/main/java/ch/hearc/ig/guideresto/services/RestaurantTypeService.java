@@ -27,25 +27,10 @@ public class RestaurantTypeService extends AbstractService {
     }
 
     public boolean update(RestaurantType type) {
-        try {
-            executeInTransaction(em -> em.merge(type));
-            return true;
-        } catch (Exception e) {
-            logger.error("Erreur lors de la mise à jour du type de restaurant", e);
-            return false;
-        }
+        return restaurantTypeMapper.update(type);
     }
 
     public boolean delete(RestaurantType type) {
-        try {
-            executeInTransaction(em -> {
-                RestaurantType managed = em.contains(type) ? type : em.merge(type);
-                em.remove(managed);
-            });
-            return true;
-        } catch (Exception e) {
-            logger.error("Erreur lors de la suppression du type de restaurant", e);
-            return false;
-        }
+        return restaurantTypeMapper.delete(type);
     }
 }

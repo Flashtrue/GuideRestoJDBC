@@ -22,25 +22,10 @@ public class EvaluationCriteriaService extends AbstractService {
     }
 
     public boolean update(EvaluationCriteria criteria) {
-        try {
-            executeInTransaction(em -> em.merge(criteria));
-            return true;
-        } catch (Exception e) {
-            logger.error("Erreur lors de la mise à jour du critère d'évaluation", e);
-            return false;
-        }
+        return evaluationCriteriaMapper.update(criteria);
     }
 
     public boolean delete(EvaluationCriteria criteria) {
-        try {
-            executeInTransaction(em -> {
-                EvaluationCriteria managed = em.contains(criteria) ? criteria : em.merge(criteria);
-                em.remove(managed);
-            });
-            return true;
-        } catch (Exception e) {
-            logger.error("Erreur lors de la suppression du critère d'évaluation", e);
-            return false;
-        }
+        return evaluationCriteriaMapper.delete(criteria);
     }
 }

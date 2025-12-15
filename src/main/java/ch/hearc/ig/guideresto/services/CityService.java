@@ -30,25 +30,10 @@ public class CityService extends AbstractService {
     }
 
     public boolean update(City city) {
-        try {
-            executeInTransaction(em -> em.merge(city));
-            return true;
-        } catch (Exception e) {
-            logger.error("Erreur lors de la mise à jour de la ville", e);
-            return false;
-        }
+        return cityMapper.update(city);
     }
 
     public boolean delete(City city) {
-        try {
-            executeInTransaction(em -> {
-                City managed = em.contains(city) ? city : em.merge(city);
-                em.remove(managed);
-            });
-            return true;
-        } catch (Exception e) {
-            logger.error("Erreur lors de la suppression de la ville", e);
-            return false;
-        }
+        return cityMapper.delete(city);
     }
 }

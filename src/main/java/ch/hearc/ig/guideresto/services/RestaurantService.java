@@ -63,13 +63,7 @@ public class RestaurantService extends AbstractService {
     }
 
     public boolean update(Restaurant restaurant) {
-        try {
-            executeInTransaction(em -> em.merge(restaurant));
-            return true;
-        } catch (Exception e) {
-            logger.error("Erreur lors de la mise à jour du restaurant", e);
-            return false;
-        }
+        return restaurantMapper.update(restaurant);
     }
 
     /**
@@ -77,33 +71,26 @@ public class RestaurantService extends AbstractService {
      */
     public boolean delete(Restaurant restaurant) {
         try {
-            executeInTransaction(em -> {
-                Restaurant managed = em.contains(restaurant) ? restaurant : em.merge(restaurant);
+            // 1. Supprimer les évaluations basiques
+            Set<BasicEvaluation> basicEvals = basicEvaluationMapper.findByRestaurant(restaurant);
+            for (BasicEvaluation eval : basicEvals) {
+                basicEvaluationMapper.delete(eval);
+            }
 
-                // Suppression des évaluations basiques
-                Set<BasicEvaluation> basicEvals = basicEvaluationMapper.findByRestaurant(managed);
-                basicEvals.forEach(eval -> {
-                    BasicEvaluation managedEval = em.contains(eval) ? eval : em.merge(eval);
-                    em.remove(managedEval);
-                });
-
-                // Suppression des évaluations complètes + leurs grades
-                Set<CompleteEvaluation> completeEvals = completeEvaluationMapper.findByRestaurant(managed);
-                for (CompleteEvaluation eval : completeEvals) {
-                    CompleteEvaluation managedEval = em.contains(eval) ? eval : em.merge(eval);
-
-                    Set<Grade> grades = gradeMapper.findByEvaluation(managedEval);
-                    grades.forEach(grade -> {
-                        Grade managedGrade = em.contains(grade) ? grade : em.merge(grade);
-                        em.remove(managedGrade);
-                    });
-
-                    em.remove(managedEval);
+            // 2. Supprimer les évaluations complètes + leurs grades
+            Set<CompleteEvaluation> completeEvals = completeEvaluationMapper.findByRestaurant(restaurant);
+            for (CompleteEvaluation eval : completeEvals) {
+                // Supprimer d'abord les grades de cette évaluation
+                Set<Grade> grades = gradeMapper.findByEvaluation(eval);
+                for (Grade grade : grades) {
+                    gradeMapper.delete(grade);
                 }
+                // Puis l'évaluation
+                completeEvaluationMapper.delete(eval);
+            }
 
-                em.remove(managed);
-            });
-            return true;
+            // 3. Supprimer le restaurant
+            return restaurantMapper.delete(restaurant);
         } catch (Exception e) {
             logger.error("Erreur lors de la suppression du restaurant", e);
             return false;

@@ -59,29 +59,19 @@ public class CompleteEvaluationService extends AbstractService {
     }
 
     public boolean update(CompleteEvaluation evaluation) {
-        try {
-            executeInTransaction(em -> em.merge(evaluation));
-            return true;
-        } catch (Exception e) {
-            logger.error("Erreur lors de la mise à jour de l'évaluation", e);
-            return false;
-        }
+        return completeEvaluationMapper.update(evaluation);
     }
 
     public boolean delete(CompleteEvaluation evaluation) {
         try {
-            executeInTransaction(em -> {
-                CompleteEvaluation managed = em.contains(evaluation) ? evaluation : em.merge(evaluation);
-
-                Set<Grade> grades = gradeMapper.findByEvaluation(managed);
-                grades.forEach(grade -> {
-                    Grade managedGrade = em.contains(grade) ? grade : em.merge(grade);
-                    em.remove(managedGrade);
-                });
-
-                em.remove(managed);
-            });
-            return true;
+            // 1. Supprimer d'abord tous les grades associés
+            Set<Grade> grades = gradeMapper.findByEvaluation(evaluation);
+            for (Grade grade : grades) {
+                gradeMapper.delete(grade);
+            }
+            
+            // 2. Supprimer l'évaluation
+            return completeEvaluationMapper.delete(evaluation);
         } catch (Exception e) {
             logger.error("Erreur lors de la suppression de l'évaluation", e);
             return false;
