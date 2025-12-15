@@ -1,20 +1,14 @@
 package ch.hearc.ig.guideresto.services;
 
-import ch.hearc.ig.guideresto.business.BasicEvaluation;
-import ch.hearc.ig.guideresto.business.Restaurant;
+import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.BasicEvaluationMapper;
 
-import java.sql.SQLException;
 import java.util.Date;
 import java.util.Set;
 
 public class BasicEvaluationService extends AbstractService {
 
-    private final BasicEvaluationMapper basicEvaluationMapper;
-
-    public BasicEvaluationService() {
-        this.basicEvaluationMapper = new BasicEvaluationMapper();
-    }
+    private final BasicEvaluationMapper basicEvaluationMapper = new BasicEvaluationMapper();
 
     public Set<BasicEvaluation> getAll() {
         return basicEvaluationMapper.findAll();
@@ -30,54 +24,44 @@ public class BasicEvaluationService extends AbstractService {
 
     public BasicEvaluation create(Restaurant restaurant, boolean like, String ipAddress) {
         try {
-            BasicEvaluation evaluation = new BasicEvaluation(null, new Date(), restaurant, like, ipAddress);
-            executeInTransaction(() -> {
-                basicEvaluationMapper.create(evaluation);
+            return executeInTransactionWithResult(em -> {
+                BasicEvaluation evaluation = new BasicEvaluation(null, new Date(), restaurant, like, ipAddress);
+                em.persist(evaluation);
+                restaurant.getEvaluations().add(evaluation);
+                return evaluation;
             });
-
-            restaurant.getEvaluations().add(evaluation);
-
-            return evaluation;
-        } catch (SQLException e) {
-            logger.error("Erreur lors de l'ajout d'une évaluation basique", e);
+        } catch (Exception e) {
+            logger.error("Erreur lors de la création de l'évaluation basique", e);
             return null;
         }
     }
 
     public boolean update(BasicEvaluation evaluation) {
         try {
-            executeInTransaction(() -> {
-                basicEvaluationMapper.update(evaluation);
-            });
+            executeInTransaction(em -> em.merge(evaluation));
             return true;
-        } catch (SQLException e) {
-            logger.error("Erreur lors de la mise à jour de l'évaluation basique", e);
+        } catch (Exception e) {
+            logger.error("Erreur lors de la mise à jour de l'évaluation", e);
             return false;
         }
     }
 
     public boolean delete(BasicEvaluation evaluation) {
         try {
-            executeInTransaction(() -> {
-                basicEvaluationMapper.delete(evaluation);
+            executeInTransaction(em -> {
+                BasicEvaluation managed = em.contains(evaluation) ? evaluation : em.merge(evaluation);
+                em.remove(managed);
             });
             return true;
-        } catch (SQLException e) {
-            logger.error("Erreur lors de la suppression de l'évaluation basique", e);
+        } catch (Exception e) {
+            logger.error("Erreur lors de la suppression de l'évaluation", e);
             return false;
         }
     }
 
     public int countLikes(Restaurant restaurant, boolean likeRestaurant) {
-        int count = 0;
-        Set<BasicEvaluation> evaluations = findByRestaurant(restaurant);
-
-        for (BasicEvaluation evaluation : evaluations) {
-            if (evaluation.getLikeRestaurant() == likeRestaurant) {
-                count++;
-            }
-        }
-
-        return count;
+        return (int) findByRestaurant(restaurant).stream()
+                .filter(eval -> eval.getLikeRestaurant() == likeRestaurant)
+                .count();
     }
 }

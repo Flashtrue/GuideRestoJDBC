@@ -1,28 +1,25 @@
 package ch.hearc.ig.guideresto.services;
 
-import ch.hearc.ig.guideresto.persistence.ConnectionUtils;
+import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
+import jakarta.persistence.EntityManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.sql.Connection;
-import java.sql.SQLException;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public abstract class AbstractService {
     protected static final Logger logger = LogManager.getLogger();
 
-    protected void executeInTransaction(Runnable operation) throws SQLException {
-        Connection connection = ConnectionUtils.getConnection();
-        try {
-            connection.setAutoCommit(false);
-            operation.run();
-            connection.commit();
-        } catch (SQLException e) {
-            try {
-                connection.rollback();
-            } catch (SQLException ex) {
-                logger.error("Erreur lors du rollback", ex);
-            }
-            throw e;
-        }
+    protected void executeInTransaction(Consumer<EntityManager> operation) {
+        JpaUtils.inTransaction(operation);
+    }
+
+    protected <T> T executeInTransactionWithResult(Function<EntityManager, T> operation) {
+        return JpaUtils.inTransactionWithResult(operation);
+    }
+
+    protected EntityManager em() {
+        return JpaUtils.getEntityManager();
     }
 }

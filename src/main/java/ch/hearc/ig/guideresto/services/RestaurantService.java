@@ -1,29 +1,17 @@
 package ch.hearc.ig.guideresto.services;
 
-import ch.hearc.ig.guideresto.business.Restaurant;
-import ch.hearc.ig.guideresto.business.RestaurantType;
-import ch.hearc.ig.guideresto.business.CompleteEvaluation;
-import ch.hearc.ig.guideresto.business.BasicEvaluation;
-import ch.hearc.ig.guideresto.business.Grade;
-import ch.hearc.ig.guideresto.persistence.RestaurantMapper;
+import ch.hearc.ig.guideresto.business.*;
+import ch.hearc.ig.guideresto.persistence.*;
 
-import java.sql.SQLException;
-import java.util.HashSet;
 import java.util.Set;
 
 public class RestaurantService extends AbstractService {
 
-    private final RestaurantMapper restaurantMapper;
-    private final BasicEvaluationService basicEvaluationService;
-    private final CompleteEvaluationService completeEvaluationService;
-    private final GradeService gradeService;
-
-    public RestaurantService() {
-        this.restaurantMapper = new RestaurantMapper();
-        this.basicEvaluationService = new BasicEvaluationService();
-        this.completeEvaluationService = new CompleteEvaluationService();
-        this.gradeService = new GradeService();
-    }
+    private final RestaurantMapper restaurantMapper = new RestaurantMapper();
+    private final CityMapper cityMapper = new CityMapper();
+    private final BasicEvaluationMapper basicEvaluationMapper = new BasicEvaluationMapper();
+    private final CompleteEvaluationMapper completeEvaluationMapper = new CompleteEvaluationMapper();
+    private final GradeMapper gradeMapper = new GradeMapper();
 
     public Set<Restaurant> getAllRestaurants() {
         return restaurantMapper.findAll();
@@ -34,54 +22,45 @@ public class RestaurantService extends AbstractService {
     }
 
     public Set<Restaurant> findByName(String name) {
-        Set<Restaurant> allRestaurants = getAllRestaurants();
-        Set<Restaurant> filteredRestaurants = new HashSet<>();
-
-        for (Restaurant restaurant : allRestaurants) {
-            if (restaurant.getName().toUpperCase().contains(name.toUpperCase())) {
-                filteredRestaurants.add(restaurant);
-            }
-        }
-
-        return filteredRestaurants;
+        return restaurantMapper.findByName(name);
     }
 
     public Set<Restaurant> findByCity(String cityName) {
-        Set<Restaurant> allRestaurants = getAllRestaurants();
-        Set<Restaurant> filteredRestaurants = new HashSet<>();
-
-        for (Restaurant restaurant : allRestaurants) {
-            if (restaurant.getAddress().getCity().getCityName().toUpperCase().contains(cityName.toUpperCase())) {
-                filteredRestaurants.add(restaurant);
-            }
+        Set<City> cities = cityMapper.findByCityName(cityName);
+        if (cities.isEmpty()) {
+            return Set.of();
         }
-
-        return filteredRestaurants;
+        return restaurantMapper.findByCity(cities.iterator().next());
     }
 
     public Set<Restaurant> findByType(RestaurantType type) {
-        Set<Restaurant> allRestaurants = getAllRestaurants();
-        Set<Restaurant> filteredRestaurants = new HashSet<>();
-
-        for (Restaurant restaurant : allRestaurants) {
-            if (restaurant.getType().getId().equals(type.getId())) {
-                filteredRestaurants.add(restaurant);
-            }
-        }
-
-        return filteredRestaurants;
+        return restaurantMapper.findByType(type);
     }
 
+    /**
+     * Transaction atomique : Restaurant + City (création si nécessaire) + Address
+     */
     public Restaurant create(Restaurant restaurant) {
         try {
-            executeInTransaction(() -> {
-                Restaurant createdRestaurant = restaurantMapper.create(restaurant);
-                if (createdRestaurant != null && createdRestaurant.getId() != null) {
-                    restaurant.setId(createdRestaurant.getId());
+            return executeInTransactionWithResult(em -> {
+                // 1. Gestion de la ville
+                City city = restaurant.getAddress().getCity();
+                if (city.getId() == null) {
+                    City existingCity = cityMapper.findByZipCode(city.getZipCode());
+                    if (existingCity != null) {
+                        restaurant.getAddress().setCity(existingCity);
+                    } else {
+                        em.persist(city);
+                    }
                 }
+
+                // 2. Persistance de l'adresse et du restaurant
+                em.persist(restaurant.getAddress());
+                em.persist(restaurant);
+
+                return restaurant;
             });
-            return restaurant;
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Erreur lors de la création du restaurant", e);
             return null;
         }
@@ -89,39 +68,47 @@ public class RestaurantService extends AbstractService {
 
     public boolean update(Restaurant restaurant) {
         try {
-            executeInTransaction(() -> {
-                restaurantMapper.update(restaurant);
-            });
+            executeInTransaction(em -> em.merge(restaurant));
             return true;
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Erreur lors de la mise à jour du restaurant", e);
             return false;
         }
     }
 
+    /**
+     * Suppression en cascade : Restaurant → Evaluations (Basic + Complete) → Grades
+     */
     public boolean delete(Restaurant restaurant) {
         try {
-            executeInTransaction(() -> {
-                Set<BasicEvaluation> basicEvaluations = basicEvaluationService.findByRestaurant(restaurant);
-                for (BasicEvaluation basicEval : basicEvaluations) {
-                    basicEvaluationService.delete(basicEval);
+            executeInTransaction(em -> {
+                Restaurant managed = em.contains(restaurant) ? restaurant : em.merge(restaurant);
+
+                // Suppression des évaluations basiques
+                Set<BasicEvaluation> basicEvals = basicEvaluationMapper.findByRestaurant(managed);
+                basicEvals.forEach(eval -> {
+                    BasicEvaluation managedEval = em.contains(eval) ? eval : em.merge(eval);
+                    em.remove(managedEval);
+                });
+
+                // Suppression des évaluations complètes + leurs grades
+                Set<CompleteEvaluation> completeEvals = completeEvaluationMapper.findByRestaurant(managed);
+                for (CompleteEvaluation eval : completeEvals) {
+                    CompleteEvaluation managedEval = em.contains(eval) ? eval : em.merge(eval);
+
+                    Set<Grade> grades = gradeMapper.findByEvaluation(managedEval);
+                    grades.forEach(grade -> {
+                        Grade managedGrade = em.contains(grade) ? grade : em.merge(grade);
+                        em.remove(managedGrade);
+                    });
+
+                    em.remove(managedEval);
                 }
 
-                Set<CompleteEvaluation> completeEvaluations = completeEvaluationService.findByRestaurantId(restaurant.getId());
-                for (CompleteEvaluation completeEval : completeEvaluations) {
-                    Set<Grade> grades = gradeService.findByEvaluationId(completeEval.getId());
-                    
-                    for (Grade grade : grades) {
-                        gradeService.delete(grade);
-                    }
-                    
-                    completeEvaluationService.delete(completeEval);
-                }
-
-                restaurantMapper.delete(restaurant);
+                em.remove(managed);
             });
             return true;
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Erreur lors de la suppression du restaurant", e);
             return false;
         }

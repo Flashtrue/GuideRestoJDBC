@@ -3,16 +3,11 @@ package ch.hearc.ig.guideresto.services;
 import ch.hearc.ig.guideresto.business.RestaurantType;
 import ch.hearc.ig.guideresto.persistence.RestaurantTypeMapper;
 
-import java.sql.SQLException;
 import java.util.Set;
 
 public class RestaurantTypeService extends AbstractService {
 
-    private final RestaurantTypeMapper restaurantTypeMapper;
-
-    public RestaurantTypeService() {
-        this.restaurantTypeMapper = new RestaurantTypeMapper();
-    }
+    private final RestaurantTypeMapper restaurantTypeMapper = new RestaurantTypeMapper();
 
     public Set<RestaurantType> getAll() {
         return restaurantTypeMapper.findAll();
@@ -23,24 +18,17 @@ public class RestaurantTypeService extends AbstractService {
     }
 
     public RestaurantType findByLabel(String label) {
-        Set<RestaurantType> types = getAll();
-
-        for (RestaurantType type : types) {
-            if (type.getLabel().equalsIgnoreCase(label)) {
-                return type;
-            }
-        }
-
-        return null;
+        Set<RestaurantType> types = restaurantTypeMapper.findByLabel(label);
+        return types.isEmpty() ? null : types.iterator().next();
     }
 
     public RestaurantType create(RestaurantType type) {
         try {
-            executeInTransaction(() -> {
-                restaurantTypeMapper.create(type);
+            return executeInTransactionWithResult(em -> {
+                em.persist(type);
+                return type;
             });
-            return type;
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Erreur lors de la création du type de restaurant", e);
             return null;
         }
@@ -48,11 +36,9 @@ public class RestaurantTypeService extends AbstractService {
 
     public boolean update(RestaurantType type) {
         try {
-            executeInTransaction(() -> {
-                restaurantTypeMapper.update(type);
-            });
+            executeInTransaction(em -> em.merge(type));
             return true;
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Erreur lors de la mise à jour du type de restaurant", e);
             return false;
         }
@@ -60,11 +46,12 @@ public class RestaurantTypeService extends AbstractService {
 
     public boolean delete(RestaurantType type) {
         try {
-            executeInTransaction(() -> {
-                restaurantTypeMapper.delete(type);
+            executeInTransaction(em -> {
+                RestaurantType managed = em.contains(type) ? type : em.merge(type);
+                em.remove(managed);
             });
             return true;
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Erreur lors de la suppression du type de restaurant", e);
             return false;
         }

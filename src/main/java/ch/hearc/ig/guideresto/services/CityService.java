@@ -3,16 +3,11 @@ package ch.hearc.ig.guideresto.services;
 import ch.hearc.ig.guideresto.business.City;
 import ch.hearc.ig.guideresto.persistence.CityMapper;
 
-import java.sql.SQLException;
 import java.util.Set;
 
 public class CityService extends AbstractService {
 
-    private final CityMapper cityMapper;
-
-    public CityService() {
-        this.cityMapper = new CityMapper();
-    }
+    private final CityMapper cityMapper = new CityMapper();
 
     public Set<City> getAll() {
         return cityMapper.findAll();
@@ -23,27 +18,20 @@ public class CityService extends AbstractService {
     }
 
     public City findByZipCode(String zipCode) {
-        Set<City> cities = getAll();
+        return cityMapper.findByZipCode(zipCode);
+    }
 
-        for (City city : cities) {
-            if (city.getZipCode().equals(zipCode)) {
-                return city;
-            }
-        }
-
-        return null;
+    public Set<City> findByCityName(String cityName) {
+        return cityMapper.findByCityName(cityName);
     }
 
     public City create(City city) {
         try {
-            executeInTransaction(() -> {
-                City createdCity = cityMapper.create(city); 
-                if (createdCity != null && createdCity.getId() != null) {
-                    city.setId(createdCity.getId()); 
-                }
+            return executeInTransactionWithResult(em -> {
+                em.persist(city);
+                return city;
             });
-            return city;
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Erreur lors de la création de la ville", e);
             return null;
         }
@@ -51,11 +39,9 @@ public class CityService extends AbstractService {
 
     public boolean update(City city) {
         try {
-            executeInTransaction(() -> {
-                cityMapper.update(city);
-            });
+            executeInTransaction(em -> em.merge(city));
             return true;
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Erreur lors de la mise à jour de la ville", e);
             return false;
         }
@@ -63,11 +49,12 @@ public class CityService extends AbstractService {
 
     public boolean delete(City city) {
         try {
-            executeInTransaction(() -> {
-                cityMapper.delete(city);
+            executeInTransaction(em -> {
+                City managed = em.contains(city) ? city : em.merge(city);
+                em.remove(managed);
             });
             return true;
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Erreur lors de la suppression de la ville", e);
             return false;
         }

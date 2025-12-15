@@ -4,13 +4,14 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.Persistence;
+
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class JpaUtils {
 
     private static EntityManagerFactory emf;
     private static EntityManager em;
-
 
     public static EntityManager getEntityManager() {
         if (em == null || !em.isOpen()) {
@@ -23,7 +24,7 @@ public class JpaUtils {
     }
 
     public static void inTransaction(Consumer<EntityManager> consumer) {
-        EntityManager em = JpaUtils.getEntityManager();
+        EntityManager em = getEntityManager();
         EntityTransaction transaction = em.getTransaction();
         try {
             transaction.begin();
@@ -35,6 +36,32 @@ public class JpaUtils {
                 transaction.rollback();
             }
             throw ex;
+        }
+    }
+
+    public static <T> T inTransactionWithResult(Function<EntityManager, T> function) {
+        EntityManager em = getEntityManager();
+        EntityTransaction transaction = em.getTransaction();
+        try {
+            transaction.begin();
+            T result = function.apply(em);
+            em.flush();
+            transaction.commit();
+            return result;
+        } catch (Exception ex) {
+            if (transaction.isActive()) {
+                transaction.rollback();
+            }
+            throw ex;
+        }
+    }
+
+    public static void closeEntityManagerFactory() {
+        if (em != null && em.isOpen()) {
+            em.close();
+        }
+        if (emf != null && emf.isOpen()) {
+            emf.close();
         }
     }
 }

@@ -1,18 +1,13 @@
 package ch.hearc.ig.guideresto.services;
 
-import ch.hearc.ig.guideresto.business.Grade;
+import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.GradeMapper;
 
-import java.sql.SQLException;
 import java.util.Set;
 
 public class GradeService extends AbstractService {
 
-    private final GradeMapper gradeMapper;
-
-    public GradeService() {
-        this.gradeMapper = new GradeMapper();
-    }
+    private final GradeMapper gradeMapper = new GradeMapper();
 
     public Set<Grade> getAll() {
         return gradeMapper.findAll();
@@ -22,21 +17,21 @@ public class GradeService extends AbstractService {
         return gradeMapper.findById(id);
     }
 
+    public Set<Grade> findByEvaluation(CompleteEvaluation evaluation) {
+        return gradeMapper.findByEvaluation(evaluation);
+    }
+
     public Set<Grade> findByEvaluationId(int evaluationId) {
         return gradeMapper.findByEvaluationId(evaluationId);
     }
 
     public Grade createGrade(Grade grade) {
-        return gradeMapper.create(grade);
-    }
-
-    public Grade create(Grade grade) {
         try {
-            executeInTransaction(() -> {
-                gradeMapper.create(grade);
+            return executeInTransactionWithResult(em -> {
+                em.persist(grade);
+                return grade;
             });
-            return grade;
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Erreur lors de la création de la note", e);
             return null;
         }
@@ -44,11 +39,9 @@ public class GradeService extends AbstractService {
 
     public boolean update(Grade grade) {
         try {
-            executeInTransaction(() -> {
-                gradeMapper.update(grade);
-            });
+            executeInTransaction(em -> em.merge(grade));
             return true;
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Erreur lors de la mise à jour de la note", e);
             return false;
         }
@@ -56,11 +49,12 @@ public class GradeService extends AbstractService {
 
     public boolean delete(Grade grade) {
         try {
-            executeInTransaction(() -> {
-                gradeMapper.delete(grade);
+            executeInTransaction(em -> {
+                Grade managed = em.contains(grade) ? grade : em.merge(grade);
+                em.remove(managed);
             });
             return true;
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("Erreur lors de la suppression de la note", e);
             return false;
         }

@@ -1,24 +1,16 @@
 package ch.hearc.ig.guideresto.services;
 
-import ch.hearc.ig.guideresto.business.CompleteEvaluation;
-import ch.hearc.ig.guideresto.business.Restaurant;
-import ch.hearc.ig.guideresto.business.Grade;
-import ch.hearc.ig.guideresto.persistence.CompleteEvaluationMapper;
+import ch.hearc.ig.guideresto.business.*;
+import ch.hearc.ig.guideresto.persistence.*;
 
-import java.sql.SQLException;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
 public class CompleteEvaluationService extends AbstractService {
 
-    private final CompleteEvaluationMapper completeEvaluationMapper;
-    private final GradeService gradeService;
-
-    public CompleteEvaluationService() {
-        this.completeEvaluationMapper = new CompleteEvaluationMapper();
-        this.gradeService = new GradeService();
-    }
+    private final CompleteEvaluationMapper completeEvaluationMapper = new CompleteEvaluationMapper();
+    private final GradeMapper gradeMapper = new GradeMapper();
 
     public Set<CompleteEvaluation> getAll() {
         return completeEvaluationMapper.findAll();
@@ -32,72 +24,71 @@ public class CompleteEvaluationService extends AbstractService {
         return completeEvaluationMapper.findByRestaurantId(restaurantId);
     }
 
+    /**
+     * Transaction atomique : CompleteEvaluation + tous les Grades
+     */
     public CompleteEvaluation create(Restaurant restaurant, String username, String comment, Set<Grade> grades) {
         try {
-            CompleteEvaluation evaluation = new CompleteEvaluation(null, new Date(), restaurant, comment, username);
+            return executeInTransactionWithResult(em -> {
+                // 1. Création de l'évaluation
+                CompleteEvaluation evaluation = new CompleteEvaluation(null, new Date(), restaurant, comment, username);
+                em.persist(evaluation);
 
-            executeInTransaction(() -> {
-                CompleteEvaluation createdEvaluation = completeEvaluationMapper.create(evaluation);
-
-                if (createdEvaluation == null) {
-                    throw new RuntimeException("Échec de la création de l'évaluation");
-                }
-
+                // 2. Création de toutes les notes
                 Set<Grade> createdGrades = new HashSet<>();
                 for (Grade grade : grades) {
-                    grade.setEvaluation(createdEvaluation);
-                    Grade createdGrade = gradeService.createGrade(grade);
-                    if (createdGrade != null) {
-                        createdGrades.add(createdGrade);
-                    } else {
-                        throw new RuntimeException("Échec de la création d'une note");
-                    }
+                    grade.setEvaluation(evaluation);
+                    em.persist(grade);
+                    createdGrades.add(grade);
                 }
 
-                createdEvaluation.setGrades(createdGrades);
+                evaluation.setGrades(createdGrades);
+                restaurant.getEvaluations().add(evaluation);
+
+                return evaluation;
             });
-
-            restaurant.getEvaluations().add(evaluation);
-
-            return evaluation;
-        } catch (SQLException e) {
-            logger.error("Erreur lors de l'ajout d'une évaluation complète", e);
+        } catch (Exception e) {
+            logger.error("Erreur lors de la création de l'évaluation complète", e);
             return null;
         }
     }
 
     public boolean update(CompleteEvaluation evaluation) {
         try {
-            executeInTransaction(() -> {
-                completeEvaluationMapper.update(evaluation);
-            });
+            executeInTransaction(em -> em.merge(evaluation));
             return true;
-        } catch (SQLException e) {
-            logger.error("Erreur lors de la mise à jour de l'évaluation complète", e);
+        } catch (Exception e) {
+            logger.error("Erreur lors de la mise à jour de l'évaluation", e);
             return false;
         }
     }
 
     public boolean delete(CompleteEvaluation evaluation) {
         try {
-            executeInTransaction(() -> {
-                completeEvaluationMapper.delete(evaluation);
+            executeInTransaction(em -> {
+                CompleteEvaluation managed = em.contains(evaluation) ? evaluation : em.merge(evaluation);
+
+                Set<Grade> grades = gradeMapper.findByEvaluation(managed);
+                grades.forEach(grade -> {
+                    Grade managedGrade = em.contains(grade) ? grade : em.merge(grade);
+                    em.remove(managedGrade);
+                });
+
+                em.remove(managed);
             });
             return true;
-        } catch (SQLException e) {
-            logger.error("Erreur lors de la suppression de l'évaluation complète", e);
+        } catch (Exception e) {
+            logger.error("Erreur lors de la suppression de l'évaluation", e);
             return false;
         }
     }
 
     public Set<CompleteEvaluation> getCompleteEvaluationsWithGrades(Restaurant restaurant) {
-        Set<CompleteEvaluation> evaluations = findByRestaurantId(restaurant.getId());
-
-        for (CompleteEvaluation evaluation : evaluations) {
-            Set<Grade> grades = gradeService.findByEvaluationId(evaluation.getId());
-            evaluation.setGrades(grades);
-        }
-
+        Set<CompleteEvaluation> evaluations = completeEvaluationMapper.findByRestaurant(restaurant);
+        evaluations.forEach(eval -> {
+            Set<Grade> grades = gradeMapper.findByEvaluation(eval);
+            eval.setGrades(grades);
+        });
         return evaluations;
     }
 }

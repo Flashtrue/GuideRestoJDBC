@@ -1,11 +1,11 @@
 package ch.hearc.ig.guideresto.services;
 
-import ch.hearc.ig.guideresto.persistence.ConnectionUtils;
+import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 
 public class Services {
 
-    private final RestaurantService restaurantService;
     private final CityService cityService;
+    private final RestaurantService restaurantService;
     private final RestaurantTypeService restaurantTypeService;
     private final BasicEvaluationService basicEvaluationService;
     private final CompleteEvaluationService completeEvaluationService;
@@ -13,8 +13,8 @@ public class Services {
     private final GradeService gradeService;
 
     public Services() {
-        this.restaurantService = new RestaurantService();
         this.cityService = new CityService();
+        this.restaurantService = new RestaurantService();
         this.restaurantTypeService = new RestaurantTypeService();
         this.basicEvaluationService = new BasicEvaluationService();
         this.completeEvaluationService = new CompleteEvaluationService();
@@ -22,12 +22,12 @@ public class Services {
         this.gradeService = new GradeService();
     }
 
-    public RestaurantService getRestaurantService() {
-        return restaurantService;
-    }
-
     public CityService getCityService() {
         return cityService;
+    }
+
+    public RestaurantService getRestaurantService() {
+        return restaurantService;
     }
 
     public RestaurantTypeService getRestaurantTypeService() {
@@ -51,6 +51,6 @@ public class Services {
     }
 
     public void closeConnection() {
-        ConnectionUtils.closeConnection();
+        JpaUtils.closeEntityManagerFactory();
     }
 }
