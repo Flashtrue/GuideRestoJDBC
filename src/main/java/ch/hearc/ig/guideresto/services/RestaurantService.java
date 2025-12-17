@@ -9,9 +9,6 @@ public class RestaurantService extends AbstractService {
 
     private final RestaurantMapper restaurantMapper = new RestaurantMapper();
     private final CityMapper cityMapper = new CityMapper();
-    private final BasicEvaluationMapper basicEvaluationMapper = new BasicEvaluationMapper();
-    private final CompleteEvaluationMapper completeEvaluationMapper = new CompleteEvaluationMapper();
-    private final GradeMapper gradeMapper = new GradeMapper();
 
     public Set<Restaurant> getAllRestaurants() {
         return restaurantMapper.findAll();
@@ -70,30 +67,6 @@ public class RestaurantService extends AbstractService {
      * Suppression en cascade : Restaurant → Evaluations (Basic + Complete) → Grades
      */
     public boolean delete(Restaurant restaurant) {
-        try {
-            // 1. Supprimer les évaluations basiques
-            Set<BasicEvaluation> basicEvals = basicEvaluationMapper.findByRestaurant(restaurant);
-            for (BasicEvaluation eval : basicEvals) {
-                basicEvaluationMapper.delete(eval);
-            }
-
-            // 2. Supprimer les évaluations complètes + leurs grades
-            Set<CompleteEvaluation> completeEvals = completeEvaluationMapper.findByRestaurant(restaurant);
-            for (CompleteEvaluation eval : completeEvals) {
-                // Supprimer d'abord les grades de cette évaluation
-                Set<Grade> grades = gradeMapper.findByEvaluation(eval);
-                for (Grade grade : grades) {
-                    gradeMapper.delete(grade);
-                }
-                // Puis l'évaluation
-                completeEvaluationMapper.delete(eval);
-            }
-
-            // 3. Supprimer le restaurant
-            return restaurantMapper.delete(restaurant);
-        } catch (Exception e) {
-            logger.error("Erreur lors de la suppression du restaurant", e);
-            return false;
-        }
+        return restaurantMapper.delete(restaurant);
     }
 }

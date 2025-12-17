@@ -39,7 +39,7 @@ public class CompleteEvaluation extends Evaluation {
     @Column(name = "NOM_UTILISATEUR")
     private String username;
 
-    @OneToMany(mappedBy = "evaluation", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "evaluation", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Grade> grades;
 
     public CompleteEvaluation() {

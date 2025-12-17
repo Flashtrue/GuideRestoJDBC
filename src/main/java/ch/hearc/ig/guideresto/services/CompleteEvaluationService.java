@@ -63,19 +63,7 @@ public class CompleteEvaluationService extends AbstractService {
     }
 
     public boolean delete(CompleteEvaluation evaluation) {
-        try {
-            // 1. Supprimer d'abord tous les grades associés
-            Set<Grade> grades = gradeMapper.findByEvaluation(evaluation);
-            for (Grade grade : grades) {
-                gradeMapper.delete(grade);
-            }
-            
-            // 2. Supprimer l'évaluation
-            return completeEvaluationMapper.delete(evaluation);
-        } catch (Exception e) {
-            logger.error("Erreur lors de la suppression de l'évaluation", e);
-            return false;
-        }
+        return completeEvaluationMapper.delete(evaluation);
     }
 
     public Set<CompleteEvaluation> getCompleteEvaluationsWithGrades(Restaurant restaurant) {
