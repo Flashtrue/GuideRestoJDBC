@@ -26,12 +26,8 @@
             <property name="jakarta.persistence.jdbc.password" value="CEDRIC_GAUCH"/>
 
             <!-- Hibernate -->
-
             <property name="hibernate.hbm2ddl.auto" value="validate"/>
 
-            <!-- Test show_sql -->
-            <property name="hibernate.show_sql" value="true"/>
-            <property name="hibernate.format_sql" value="true"/>
         </properties>
 
     </persistence-unit>
