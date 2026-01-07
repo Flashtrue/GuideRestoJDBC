@@ -78,6 +78,12 @@ public class CompleteEvaluation extends Evaluation {
     }
 
     public void setGrades(Set<Grade> grades) {
-        this.grades = grades;
+        if (this.grades == null) {
+            this.grades = new HashSet<>();
+        }
+        this.grades.clear();
+        if (grades != null) {
+            this.grades.addAll(grades);
+        }
     }
 }

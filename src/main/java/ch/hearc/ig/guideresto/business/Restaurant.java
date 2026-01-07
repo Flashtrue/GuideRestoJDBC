@@ -126,7 +126,13 @@ public class Restaurant implements IBusinessObject {
     }
 
     public void setEvaluations(Set<Evaluation> evaluations) {
-        this.evaluations = evaluations;
+        if (this.evaluations == null) {
+            this.evaluations = new HashSet<>();
+        }
+        this.evaluations.clear();
+        if (evaluations != null) {
+            this.evaluations.addAll(evaluations);
+        }
     }
 
     public Localisation getAddress() {
