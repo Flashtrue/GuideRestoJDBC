@@ -10,8 +10,9 @@ import java.net.UnknownHostException;
 import java.util.*;
 
 /**
- * @author cedric.baudet
- * @author alain.matile
+ * Point d'entrée principal de l'application GuideResto.
+ *
+ * @param args arguments de la ligne de commande.
  */
 public class Application {
 
@@ -35,7 +36,7 @@ public class Application {
     }
 
     /**
-     * Affichage du menu principal de l'application
+     * Affiche le menu principal de l'application.
      */
     private static void printMainMenu() {
         System.out.println("======================================================");
@@ -49,9 +50,9 @@ public class Application {
     }
 
     /**
-     * On gère le choix saisi par l'utilisateur
+     * Gère le choix de l'utilisateur dans le menu principal.
      *
-     * @param choice Un nombre entre 0 et 5.
+     * @param choice un nombre entre 0 et 5 représentant l'action choisie.
      */
     private static void proceedMainMenu(int choice) {
         switch (choice) {
@@ -117,7 +118,7 @@ public class Application {
     }
 
     /**
-     * Affiche la liste de tous les restaurants, sans filtre
+     * Affiche la liste de tous les restaurants.
      */
     private static void showRestaurantsList() {
         System.out.println("Liste des restaurants : ");
@@ -131,7 +132,7 @@ public class Application {
     }
 
     /**
-     * Affiche une liste de restaurants dont le nom contient une chaîne de caractères saisie par l'utilisateur
+     * Recherche des restaurants par leur nom.
      */
     private static void searchRestaurantByName() {
         System.out.println("Veuillez entrer une partie du nom recherché : ");
@@ -146,7 +147,7 @@ public class Application {
     }
 
     /**
-     * Affiche une liste de restaurants dont le nom de la ville contient une chaîne de caractères saisie par l'utilisateur
+     * Recherche des restaurants par leur ville.
      */
     private static void searchRestaurantByCity() {
         System.out.println("Veuillez entrer une partie du nom de la ville désirée : ");
@@ -161,10 +162,10 @@ public class Application {
     }
 
     /**
-     * L'utilisateur choisit une ville parmi celles présentes dans le système.
+     * Permet à l'utilisateur de sélectionner une ville parmi une liste.
      *
-     * @param cities La liste des villes à présenter à l'utilisateur
-     * @return La ville sélectionnée, ou null si aucune ville n'a été choisie.
+     * @param cities liste des villes disponibles.
+     * @return la ville sélectionnée, ou null si aucune n'est choisie.
      */
     private static City pickCity(Set<City> cities) {
         System.out.println("Voici la liste des villes possibles, veuillez entrer le NPA de la ville désirée : ");
@@ -195,10 +196,10 @@ public class Application {
     }
 
     /**
-     * L'utilisateur choisit un type de restaurant parmis ceux présents dans le système.
+     * Permet à l'utilisateur de sélectionner un type de restaurant parmi une liste.
      *
-     * @param types La liste des types de restaurant à présnter à l'utilisateur
-     * @return Le type sélectionné, ou null si aucun type n'a été choisi.
+     * @param types liste des types de restaurants disponibles.
+     * @return le type sélectionné, ou null si aucun n'est choisi.
      */
     private static RestaurantType pickRestaurantType(Set<RestaurantType> types) {
         System.out.println("Voici la liste des types possibles, veuillez entrer le libellé exact du type désiré : ");
@@ -211,8 +212,7 @@ public class Application {
     }
 
     /**
-     * L'utilisateur commence par sélectionner un type de restaurant, puis sélectionne un des restaurants proposés s'il y en a.
-     * Si l'utilisateur sélectionne un restaurant, ce dernier lui sera affiché.
+     * Recherche des restaurants par leur type.
      */
     private static void searchRestaurantByType() {
         RestaurantType chosenType = pickRestaurantType(services.getRestaurantTypeService().getAll());
@@ -231,7 +231,7 @@ public class Application {
     }
 
     /**
-     * Le programme demande les informations nécessaires à l'utilisateur puis crée un nouveau restaurant dans le système.
+     * Ajoute un nouveau restaurant en demandant les informations nécessaires à l'utilisateur.
      */
     private static void addNewRestaurant() {
         System.out.println("Vous allez ajouter un nouveau restaurant !");
@@ -268,9 +268,9 @@ public class Application {
     }
 
     /**
-     * Affiche toutes les informations du restaurant passé en paramètre, puis affiche le menu des actions disponibles sur ledit restaurant
+     * Affiche les détails d'un restaurant et propose des actions à l'utilisateur.
      *
-     * @param restaurant Le restaurant à afficher
+     * @param restaurant le restaurant à afficher.
      */
     private static void showRestaurant(Restaurant restaurant) {
         System.out.println("Affichage d'un restaurant : ");
@@ -307,7 +307,7 @@ public class Application {
     }
 
     /**
-     * Affiche dans la console un ensemble d'actions réalisables sur le restaurant actuellement sélectionné !
+     * Affiche les actions disponibles pour un restaurant sélectionné.
      */
     private static void showRestaurantMenu() {
         System.out.println("======================================================");
@@ -322,10 +322,10 @@ public class Application {
     }
 
     /**
-     * Traite le choix saisi par l'utilisateur
+     * Gère le choix de l'utilisateur dans le menu d'un restaurant.
      *
-     * @param choice     Un numéro d'action, entre 0 et 6. Si le numéro ne se trouve pas dans cette plage, l'application ne fait rien et va réafficher le menu complet.
-     * @param restaurant L'instance du restaurant sur lequel l'action doit être réalisée
+     * @param choice numéro de l'action choisie.
+     * @param restaurant le restaurant sur lequel l'action doit être réalisée.
      */
     private static void proceedRestaurantMenu(int choice, Restaurant restaurant) {
         switch (choice) {
@@ -355,10 +355,10 @@ public class Application {
     }
 
     /**
-     * Ajoute au restaurant passé en paramètre un like ou un dislike, en fonction du second paramètre.
+     * Ajoute une évaluation basique (like ou dislike) à un restaurant.
      *
-     * @param restaurant Le restaurant qui est évalué
-     * @param like       Est-ce un like ou un dislike ?
+     * @param restaurant le restaurant évalué.
+     * @param like indique s'il s'agit d'un like ou d'un dislike.
      */
     private static void addBasicEvaluation(Restaurant restaurant, Boolean like) {
         String ipAddress;
@@ -379,9 +379,9 @@ public class Application {
     }
 
     /**
-     * Crée une évaluation complète pour le restaurant. L'utilisateur doit saisir toutes les informations (dont un commentaire et quelques notes)
+     * Crée une évaluation complète pour un restaurant.
      *
-     * @param restaurant Le restaurant à évaluer
+     * @param restaurant le restaurant à évaluer.
      */
     private static void evaluateRestaurant(Restaurant restaurant) {
         System.out.println("Merci d'évaluer ce restaurant !");
@@ -411,10 +411,9 @@ public class Application {
     }
 
     /**
-     * Force l'utilisateur à saisir à nouveau toutes les informations du restaurant (sauf la clé primaire) pour le mettre à jour.
-     * Par soucis de simplicité, l'utilisateur doit tout resaisir.
+     * Met à jour les informations d'un restaurant.
      *
-     * @param restaurant Le restaurant à modifier
+     * @param restaurant le restaurant à modifier.
      */
     private static void editRestaurant(Restaurant restaurant) {
         System.out.println("Edition d'un restaurant !");
@@ -444,10 +443,9 @@ public class Application {
     }
 
     /**
-     * Permet à l'utilisateur de mettre à jour l'adresse du restaurant.
-     * Par soucis de simplicité, l'utilisateur doit tout resaisir.
+     * Met à jour l'adresse d'un restaurant.
      *
-     * @param restaurant Le restaurant dont l'adresse doit être mise à jour.
+     * @param restaurant le restaurant dont l'adresse doit être mise à jour.
      */
     private static void editRestaurantAddress(Restaurant restaurant) {
         System.out.println("Edition de l'adresse d'un restaurant !");
@@ -475,9 +473,9 @@ public class Application {
     }
 
     /**
-     * Après confirmation par l'utilisateur, supprime complètement le restaurant et toutes ses évaluations du référentiel.
+     * Supprime un restaurant après confirmation de l'utilisateur.
      *
-     * @param restaurant Le restaurant à supprimer.
+     * @param restaurant le restaurant à supprimer.
      */
     private static void deleteRestaurant(Restaurant restaurant) {
         System.out.println("Etes-vous sûr de vouloir supprimer ce restaurant ? (O/n)");

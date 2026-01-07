@@ -22,6 +22,11 @@ public class ConnectionUtils {
 
     private static Connection connection;
 
+    /**
+     * Fournit une connexion à la base de données.
+     *
+     * @return une connexion JDBC active.
+     */
     public static Connection getConnection() {
         try {
             // Load database credentials from resources/database.properties
@@ -46,6 +51,9 @@ public class ConnectionUtils {
         return ConnectionUtils.connection;
     }
 
+    /**
+     * Ferme la connexion active à la base de données si elle est ouverte.
+     */
     public static void closeConnection() {
         try {
             if (ConnectionUtils.connection != null && !ConnectionUtils.connection.isClosed()) {
