@@ -56,6 +56,9 @@ public class Restaurant implements IBusinessObject {
     
     @Embedded
     private Localisation address;
+
+    @Version
+    private Integer version;    
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "FK_TYPE")

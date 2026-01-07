@@ -437,7 +437,9 @@ public class Application {
         if (success) {
             System.out.println("Merci, le restaurant a bien été modifié !");
         } else {
-            System.out.println("Une erreur est survenue lors de la modification du restaurant !");
+            System.out.println("Conflit détecté : le restaurant a été modifié par un autre utilisateur !");
+            System.out.println("Veuillez recharger les données et réessayer.");
+
         }
     }
 

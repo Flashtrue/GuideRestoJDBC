@@ -3,6 +3,7 @@ package ch.hearc.ig.guideresto.persistence;
 import ch.hearc.ig.guideresto.business.IBusinessObject;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.persistence.TypedQuery;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -54,6 +55,9 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
         try {
             JpaUtils.inTransaction(em -> em.merge(object));
             return true;
+        } catch (OptimisticLockException ex) {
+            logger.warn("JPA optimistic lock error", ex);
+            return false;
         } catch (RuntimeException ex) {
             logger.error("JPA merge error", ex);
             return false;
