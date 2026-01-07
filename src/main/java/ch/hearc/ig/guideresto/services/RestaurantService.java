@@ -5,23 +5,49 @@ import ch.hearc.ig.guideresto.persistence.*;
 
 import java.util.Set;
 
+/**
+ * Service gérant les opérations sur les restaurants.
+ */
 public class RestaurantService extends AbstractService {
 
     private final RestaurantMapper restaurantMapper = new RestaurantMapper();
     private final CityMapper cityMapper = new CityMapper();
 
+    /**
+     * Récupère tous les restaurants.
+     * 
+     * @return l'ensemble des restaurants
+     */
     public Set<Restaurant> getAllRestaurants() {
         return restaurantMapper.findAll();
     }
 
+    /**
+     * Recherche un restaurant par son identifiant.
+     * 
+     * @param id l'identifiant du restaurant
+     * @return le restaurant trouvé ou null si non trouvé
+     */
     public Restaurant findById(int id) {
         return restaurantMapper.findById(id);
     }
 
+    /**
+     * Recherche des restaurants par leur nom.
+     * 
+     * @param name le nom du restaurant (recherche partielle insensible à la casse)
+     * @return l'ensemble des restaurants correspondants
+     */
     public Set<Restaurant> findByName(String name) {
         return restaurantMapper.findByName(name);
     }
 
+    /**
+     * Recherche des restaurants par le nom de leur ville.
+     * 
+     * @param cityName le nom de la ville
+     * @return l'ensemble des restaurants de la ville ou un ensemble vide si la ville n'existe pas
+     */
     public Set<Restaurant> findByCity(String cityName) {
         Set<City> cities = cityMapper.findByCityName(cityName);
         if (cities.isEmpty()) {
@@ -30,12 +56,21 @@ public class RestaurantService extends AbstractService {
         return restaurantMapper.findByCity(cities.iterator().next());
     }
 
+    /**
+     * Recherche des restaurants par leur type gastronomique.
+     * 
+     * @param type le type de restaurant
+     * @return l'ensemble des restaurants du type spécifié
+     */
     public Set<Restaurant> findByType(RestaurantType type) {
         return restaurantMapper.findByType(type);
     }
 
     /**
-     * Transaction atomique : Restaurant + City (création si nécessaire)
+     * Crée un nouveau restaurant avec sa ville associée de manière atomique.
+     * 
+     * @param restaurant le restaurant à créer
+     * @return le restaurant créé ou null en cas d'erreur
      */
     public Restaurant create(Restaurant restaurant) {
         try {
@@ -59,12 +94,21 @@ public class RestaurantService extends AbstractService {
         }
     }
 
+    /**
+     * Met à jour un restaurant existant.
+     * 
+     * @param restaurant le restaurant à mettre à jour
+     * @return true si la mise à jour a réussi, false sinon
+     */
     public boolean update(Restaurant restaurant) {
         return restaurantMapper.update(restaurant);
     }
 
     /**
-     * Suppression en cascade : Restaurant → Evaluations (Basic + Complete) → Grades
+     * Supprime un restaurant et toutes ses évaluations associées en cascade.
+     * 
+     * @param restaurant le restaurant à supprimer
+     * @return true si la suppression a réussi, false sinon
      */
     public boolean delete(Restaurant restaurant) {
         return restaurantMapper.delete(restaurant);
