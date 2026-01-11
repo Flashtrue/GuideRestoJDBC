@@ -593,6 +593,7 @@ public class Application {
 
     /**
      * Supprime un restaurant après confirmation de l'utilisateur.
+     * Gère les conflits optimistes si le restaurant a été modifié ou supprimé entre-temps.
      *
      * @param restaurant le restaurant à supprimer.
      */
@@ -603,9 +604,13 @@ public class Application {
             boolean success = services.getRestaurantService().delete(restaurant);
 
             if (success) {
-                System.out.println("Le restaurant a bien été supprimé !");
+                System.out.println("✅ Le restaurant a bien été supprimé !");
+                logger.info("Restaurant supprimé : id={}, nom={}", restaurant.getId(), restaurant.getName());
             } else {
-                System.out.println("Une erreur est survenue lors de la suppression du restaurant !");
+                System.out.println("\n⚠️  IMPOSSIBLE DE SUPPRIMER LE RESTAURANT");
+                System.out.println("Le restaurant a été modifié ou supprimé par un autre utilisateur.");
+                System.out.println("Veuillez recharger la liste des restaurants.");
+                logger.warn("Échec de suppression - Conflit optimiste pour restaurant id={}", restaurant.getId());
             }
         }
     }

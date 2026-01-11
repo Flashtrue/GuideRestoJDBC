@@ -122,6 +122,15 @@ public class RestaurantService extends AbstractService {
      * @return true si la suppression a réussi, false sinon
      */
     public boolean delete(Restaurant restaurant) {
-        return executeInTransactionWithResult(em -> restaurantMapper.delete(restaurant));
+        try {
+            return executeInTransactionWithResult(em -> restaurantMapper.delete(restaurant));
+        } catch (jakarta.persistence.OptimisticLockException ex) {
+            logger.warn("Conflit de verrouillage optimiste lors de la suppression du restaurant id={}", restaurant.getId());
+            logger.warn("Le restaurant a été modifié ou supprimé par un autre utilisateur", ex);
+            return false;
+        } catch (Exception ex) {
+            logger.error("Erreur lors de la suppression du restaurant id={}", restaurant.getId(), ex);
+            return false;
+        }
     }
 }
