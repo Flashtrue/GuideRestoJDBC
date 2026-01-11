@@ -98,12 +98,21 @@ public class RestaurantService extends AbstractService {
 
     /**
      * Met à jour un restaurant existant.
+     * Gère les exceptions de verrouillage optimiste.
      *
      * @param restaurant le restaurant à mettre à jour
-     * @return true si la mise à jour a réussi, false sinon
+     * @return true si la mise à jour a réussi, false sinon (notamment en cas de conflit optimiste)
      */
     public boolean update(Restaurant restaurant) {
-        return executeInTransactionWithResult(em -> restaurantMapper.update(restaurant));
+        try {
+            return executeInTransactionWithResult(em -> restaurantMapper.update(restaurant));
+        } catch (jakarta.persistence.OptimisticLockException ex) {
+            logger.warn("Conflit de verrouillage optimiste détecté pour le restaurant id={}", restaurant.getId(), ex);
+            return false;
+        } catch (Exception ex) {
+            logger.error("Erreur lors de la mise à jour du restaurant id={}", restaurant.getId(), ex);
+            return false;
+        }
     }
 
     /**
