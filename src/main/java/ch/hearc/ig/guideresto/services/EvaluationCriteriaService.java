@@ -14,7 +14,7 @@ public class EvaluationCriteriaService extends AbstractService {
 
     /**
      * Récupère tous les critères d'évaluation.
-     * 
+     *
      * @return l'ensemble des critères d'évaluation
      */
     public Set<EvaluationCriteria> getAll() {
@@ -23,7 +23,7 @@ public class EvaluationCriteriaService extends AbstractService {
 
     /**
      * Recherche un critère d'évaluation par son identifiant.
-     * 
+     *
      * @param id l'identifiant du critère
      * @return le critère trouvé ou null si non trouvé
      */
@@ -33,31 +33,31 @@ public class EvaluationCriteriaService extends AbstractService {
 
     /**
      * Crée un nouveau critère d'évaluation.
-     * 
+     *
      * @param criteria le critère à créer
      * @return le critère créé ou null en cas d'erreur
      */
     public EvaluationCriteria create(EvaluationCriteria criteria) {
-        return evaluationCriteriaMapper.create(criteria);
+        return executeInTransactionWithResult(em -> evaluationCriteriaMapper.create(criteria));
     }
 
     /**
      * Met à jour un critère d'évaluation existant.
-     * 
+     *
      * @param criteria le critère à mettre à jour
      * @return true si la mise à jour a réussi, false sinon
      */
     public boolean update(EvaluationCriteria criteria) {
-        return evaluationCriteriaMapper.update(criteria);
+        return executeInTransactionWithResult(em -> evaluationCriteriaMapper.update(criteria));
     }
 
     /**
      * Supprime un critère d'évaluation.
-     * 
+     *
      * @param criteria le critère à supprimer
      * @return true si la suppression a réussi, false sinon
      */
     public boolean delete(EvaluationCriteria criteria) {
-        return evaluationCriteriaMapper.delete(criteria);
+        return executeInTransactionWithResult(em -> evaluationCriteriaMapper.delete(criteria));
     }
 }

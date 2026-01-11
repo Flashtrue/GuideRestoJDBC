@@ -15,7 +15,7 @@ public class BasicEvaluationService extends AbstractService {
 
     /**
      * Récupère toutes les évaluations basiques.
-     * 
+     *
      * @return l'ensemble des évaluations basiques
      */
     public Set<BasicEvaluation> getAll() {
@@ -24,7 +24,7 @@ public class BasicEvaluationService extends AbstractService {
 
     /**
      * Recherche une évaluation basique par son identifiant.
-     * 
+     *
      * @param id l'identifiant de l'évaluation
      * @return l'évaluation trouvée ou null si non trouvée
      */
@@ -34,7 +34,7 @@ public class BasicEvaluationService extends AbstractService {
 
     /**
      * Récupère toutes les évaluations basiques pour un restaurant donné.
-     * 
+     *
      * @param restaurant le restaurant concerné
      * @return l'ensemble des évaluations du restaurant
      */
@@ -44,49 +44,51 @@ public class BasicEvaluationService extends AbstractService {
 
     /**
      * Crée une nouvelle évaluation basique pour un restaurant.
-     * 
+     *
      * @param restaurant le restaurant évalué
      * @param like true si l'utilisateur aime le restaurant, false sinon
      * @param ipAddress l'adresse IP de l'utilisateur
      * @return l'évaluation créée ou null en cas d'erreur
      */
     public BasicEvaluation create(Restaurant restaurant, boolean like, String ipAddress) {
-        try {
-            BasicEvaluation evaluation = new BasicEvaluation(null, new Date(), restaurant, like, ipAddress);
-            BasicEvaluation created = basicEvaluationMapper.create(evaluation);
-            if (created != null) {
-                restaurant.getEvaluations().add(created);
+        return executeInTransactionWithResult(em -> {
+            try {
+                BasicEvaluation evaluation = new BasicEvaluation(null, new Date(), restaurant, like, ipAddress);
+                BasicEvaluation created = basicEvaluationMapper.create(evaluation);
+                if (created != null) {
+                    restaurant.getEvaluations().add(created);
+                }
+                return created;
+            } catch (Exception e) {
+                logger.error("Erreur lors de la création de l'évaluation basique", e);
+                throw e; // Relancer pour rollback automatique
             }
-            return created;
-        } catch (Exception e) {
-            logger.error("Erreur lors de la création de l'évaluation basique", e);
-            return null;
-        }
+        });
     }
 
     /**
      * Met à jour une évaluation basique existante.
-     * 
+     *
      * @param evaluation l'évaluation à mettre à jour
      * @return true si la mise à jour a réussi, false sinon
      */
     public boolean update(BasicEvaluation evaluation) {
-        return basicEvaluationMapper.update(evaluation);
+        return executeInTransactionWithResult(em -> basicEvaluationMapper.update(evaluation));
     }
 
     /**
      * Supprime une évaluation basique.
-     * 
+     *
      * @param evaluation l'évaluation à supprimer
      * @return true si la suppression a réussi, false sinon
      */
     public boolean delete(BasicEvaluation evaluation) {
-        return basicEvaluationMapper.delete(evaluation);
+        return executeInTransactionWithResult(em -> basicEvaluationMapper.delete(evaluation));
     }
 
     /**
      * Compte le nombre de likes ou dislikes pour un restaurant.
-     * 
+     *
      * @param restaurant le restaurant concerné
      * @param likeRestaurant true pour compter les likes, false pour les dislikes
      * @return le nombre d'évaluations correspondantes

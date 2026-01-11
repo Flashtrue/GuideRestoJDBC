@@ -18,7 +18,7 @@ public class CompleteEvaluationService extends AbstractService {
 
     /**
      * Récupère toutes les évaluations complètes.
-     * 
+     *
      * @return l'ensemble des évaluations complètes
      */
     public Set<CompleteEvaluation> getAll() {
@@ -27,7 +27,7 @@ public class CompleteEvaluationService extends AbstractService {
 
     /**
      * Recherche une évaluation complète par son identifiant.
-     * 
+     *
      * @param id l'identifiant de l'évaluation
      * @return l'évaluation trouvée ou null si non trouvée
      */
@@ -37,7 +37,7 @@ public class CompleteEvaluationService extends AbstractService {
 
     /**
      * Récupère toutes les évaluations complètes pour un restaurant donné.
-     * 
+     *
      * @param restaurantId l'identifiant du restaurant
      * @return l'ensemble des évaluations du restaurant
      */
@@ -47,7 +47,7 @@ public class CompleteEvaluationService extends AbstractService {
 
     /**
      * Crée une nouvelle évaluation complète avec ses notes associées de manière atomique.
-     * 
+     *
      * @param restaurant le restaurant évalué
      * @param username le nom de l'utilisateur
      * @param comment le commentaire de l'évaluation
@@ -55,58 +55,61 @@ public class CompleteEvaluationService extends AbstractService {
      * @return l'évaluation créée ou null en cas d'erreur
      */
     public CompleteEvaluation create(Restaurant restaurant, String username, String comment, Set<Grade> grades) {
-        try {
-            // 1. Création de l'évaluation
-            CompleteEvaluation evaluation = new CompleteEvaluation(null, new Date(), restaurant, comment, username);
-            CompleteEvaluation created = completeEvaluationMapper.create(evaluation);
-            
-            if (created == null) {
-                return null;
-            }
+        return executeInTransactionWithResult(em -> {
+            try {
+                // 1. Création de l'évaluation
+                CompleteEvaluation evaluation = new CompleteEvaluation(null, new Date(), restaurant, comment, username);
+                CompleteEvaluation created = completeEvaluationMapper.create(evaluation);
 
-            // 2. Création de toutes les notes
-            Set<Grade> createdGrades = new HashSet<>();
-            for (Grade grade : grades) {
-                grade.setEvaluation(created);
-                Grade createdGrade = gradeService.createGrade(grade);
-                if (createdGrade != null) {
+                if (created == null) {
+                    throw new RuntimeException("Impossible de créer l'évaluation");
+                }
+
+                // 2. Création de toutes les notes
+                Set<Grade> createdGrades = new HashSet<>();
+                for (Grade grade : grades) {
+                    grade.setEvaluation(created);
+                    Grade createdGrade = gradeMapper.create(grade);
+                    if (createdGrade == null) {
+                        throw new RuntimeException("Impossible de créer la note");
+                    }
                     createdGrades.add(createdGrade);
                 }
+
+                created.setGrades(createdGrades);
+                restaurant.getEvaluations().add(created);
+
+                return created;
+            } catch (Exception e) {
+                logger.error("Erreur lors de la création de l'évaluation complète", e);
+                throw e; // Relancer pour rollback automatique
             }
-
-            created.setGrades(createdGrades);
-            restaurant.getEvaluations().add(created);
-
-            return created;
-        } catch (Exception e) {
-            logger.error("Erreur lors de la création de l'évaluation complète", e);
-            return null;
-        }
+        });
     }
 
     /**
      * Met à jour une évaluation complète existante.
-     * 
+     *
      * @param evaluation l'évaluation à mettre à jour
      * @return true si la mise à jour a réussi, false sinon
      */
     public boolean update(CompleteEvaluation evaluation) {
-        return completeEvaluationMapper.update(evaluation);
+        return executeInTransactionWithResult(em -> completeEvaluationMapper.update(evaluation));
     }
 
     /**
      * Supprime une évaluation complète.
-     * 
+     *
      * @param evaluation l'évaluation à supprimer
      * @return true si la suppression a réussi, false sinon
      */
     public boolean delete(CompleteEvaluation evaluation) {
-        return completeEvaluationMapper.delete(evaluation);
+        return executeInTransactionWithResult(em -> completeEvaluationMapper.delete(evaluation));
     }
 
     /**
      * Récupère toutes les évaluations complètes d'un restaurant avec leurs notes chargées.
-     * 
+     *
      * @param restaurant le restaurant concerné
      * @return l'ensemble des évaluations avec leurs notes
      */

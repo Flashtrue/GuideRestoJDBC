@@ -72,7 +72,7 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
             return null;
         }
         try {
-            JpaUtils.inTransaction(em -> em.persist(object));
+            em().persist(object);
             return object;
         } catch (RuntimeException ex) {
             logger.error("JPA persist error", ex);
@@ -91,7 +91,7 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
             return false;
         }
         try {
-            JpaUtils.inTransaction(em -> em.merge(object));
+            em().merge(object);
             return true;
         } catch (OptimisticLockException ex) {
             logger.warn("JPA optimistic lock error", ex);
@@ -113,10 +113,8 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
             return false;
         }
         try {
-            JpaUtils.inTransaction(em -> {
-                T managed = em.contains(object) ? object : em.merge(object);
-                em.remove(managed);
-            });
+            T managed = em().contains(object) ? object : em().merge(object);
+            em().remove(managed);
             return true;
         } catch (RuntimeException ex) {
             logger.error("JPA remove error", ex);
@@ -131,16 +129,13 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
      * @return true si la suppression a réussi, false sinon.
      */
     public boolean deleteById(int id) {
-        AtomicBoolean deleted = new AtomicBoolean(false);
         try {
-            JpaUtils.inTransaction(em -> {
-                T entity = em.find(entityClass, id);
-                if (entity != null) {
-                    em.remove(entity);
-                    deleted.set(true);
-                }
-            });
-            return deleted.get();
+            T entity = em().find(entityClass, id);
+            if (entity != null) {
+                em().remove(entity);
+                return true;
+            }
+            return false;
         } catch (RuntimeException ex) {
             logger.error("JPA remove error", ex);
             return false;

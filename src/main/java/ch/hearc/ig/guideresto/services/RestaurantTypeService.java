@@ -14,7 +14,7 @@ public class RestaurantTypeService extends AbstractService {
 
     /**
      * Récupère tous les types de restaurants.
-     * 
+     *
      * @return l'ensemble des types de restaurants
      */
     public Set<RestaurantType> getAll() {
@@ -23,7 +23,7 @@ public class RestaurantTypeService extends AbstractService {
 
     /**
      * Recherche un type de restaurant par son identifiant.
-     * 
+     *
      * @param id l'identifiant du type
      * @return le type trouvé ou null si non trouvé
      */
@@ -33,7 +33,7 @@ public class RestaurantTypeService extends AbstractService {
 
     /**
      * Recherche un type de restaurant par son libellé.
-     * 
+     *
      * @param label le libellé du type (recherche partielle insensible à la casse)
      * @return le premier type correspondant ou null si aucun trouvé
      */
@@ -44,31 +44,31 @@ public class RestaurantTypeService extends AbstractService {
 
     /**
      * Crée un nouveau type de restaurant.
-     * 
+     *
      * @param type le type à créer
      * @return le type créé ou null en cas d'erreur
      */
     public RestaurantType create(RestaurantType type) {
-        return restaurantTypeMapper.create(type);
+        return executeInTransactionWithResult(em -> restaurantTypeMapper.create(type));
     }
 
     /**
      * Met à jour un type de restaurant existant.
-     * 
+     *
      * @param type le type à mettre à jour
      * @return true si la mise à jour a réussi, false sinon
      */
     public boolean update(RestaurantType type) {
-        return restaurantTypeMapper.update(type);
+        return executeInTransactionWithResult(em -> restaurantTypeMapper.update(type));
     }
 
     /**
      * Supprime un type de restaurant.
-     * 
+     *
      * @param type le type à supprimer
      * @return true si la suppression a réussi, false sinon
      */
     public boolean delete(RestaurantType type) {
-        return restaurantTypeMapper.delete(type);
+        return executeInTransactionWithResult(em -> restaurantTypeMapper.delete(type));
     }
 }

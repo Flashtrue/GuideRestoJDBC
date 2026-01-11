@@ -15,7 +15,7 @@ public class RestaurantService extends AbstractService {
 
     /**
      * Récupère tous les restaurants.
-     * 
+     *
      * @return l'ensemble des restaurants
      */
     public Set<Restaurant> getAllRestaurants() {
@@ -24,7 +24,7 @@ public class RestaurantService extends AbstractService {
 
     /**
      * Recherche un restaurant par son identifiant.
-     * 
+     *
      * @param id l'identifiant du restaurant
      * @return le restaurant trouvé ou null si non trouvé
      */
@@ -34,7 +34,7 @@ public class RestaurantService extends AbstractService {
 
     /**
      * Recherche des restaurants par leur nom.
-     * 
+     *
      * @param name le nom du restaurant (recherche partielle insensible à la casse)
      * @return l'ensemble des restaurants correspondants
      */
@@ -44,7 +44,7 @@ public class RestaurantService extends AbstractService {
 
     /**
      * Recherche des restaurants par le nom de leur ville.
-     * 
+     *
      * @param cityName le nom de la ville
      * @return l'ensemble des restaurants de la ville ou un ensemble vide si la ville n'existe pas
      */
@@ -58,7 +58,7 @@ public class RestaurantService extends AbstractService {
 
     /**
      * Recherche des restaurants par leur type gastronomique.
-     * 
+     *
      * @param type le type de restaurant
      * @return l'ensemble des restaurants du type spécifié
      */
@@ -68,49 +68,51 @@ public class RestaurantService extends AbstractService {
 
     /**
      * Crée un nouveau restaurant avec sa ville associée de manière atomique.
-     * 
+     *
      * @param restaurant le restaurant à créer
      * @return le restaurant créé ou null en cas d'erreur
      */
     public Restaurant create(Restaurant restaurant) {
-        try {
-            // 1. Gestion de la ville
-            City city = restaurant.getAddress().getCity();
-            if (city.getId() == null) {
-                City existingCity = cityMapper.findByZipCode(city.getZipCode());
-                if (existingCity != null) {
-                    restaurant.getAddress().setCity(existingCity);
-                } else {
-                    City createdCity = cityMapper.create(city);
-                    restaurant.getAddress().setCity(createdCity);
+        return executeInTransactionWithResult(em -> {
+            try {
+                // 1. Gestion de la ville
+                City city = restaurant.getAddress().getCity();
+                if (city.getId() == null) {
+                    City existingCity = cityMapper.findByZipCode(city.getZipCode());
+                    if (existingCity != null) {
+                        restaurant.getAddress().setCity(existingCity);
+                    } else {
+                        City createdCity = cityMapper.create(city);
+                        restaurant.getAddress().setCity(createdCity);
+                    }
                 }
-            }
 
-            // 2. Persistance du restaurant (Localisation est @Embeddable, donc pas de persist séparé)
-            return restaurantMapper.create(restaurant);
-        } catch (Exception e) {
-            logger.error("Erreur lors de la création du restaurant", e);
-            return null;
-        }
+                // 2. Persistance du restaurant (Localisation est @Embeddable, donc pas de persist séparé)
+                return restaurantMapper.create(restaurant);
+            } catch (Exception e) {
+                logger.error("Erreur lors de la création du restaurant", e);
+                throw e; // Relancer pour rollback automatique
+            }
+        });
     }
 
     /**
      * Met à jour un restaurant existant.
-     * 
+     *
      * @param restaurant le restaurant à mettre à jour
      * @return true si la mise à jour a réussi, false sinon
      */
     public boolean update(Restaurant restaurant) {
-        return restaurantMapper.update(restaurant);
+        return executeInTransactionWithResult(em -> restaurantMapper.update(restaurant));
     }
 
     /**
      * Supprime un restaurant et toutes ses évaluations associées en cascade.
-     * 
+     *
      * @param restaurant le restaurant à supprimer
      * @return true si la suppression a réussi, false sinon
      */
     public boolean delete(Restaurant restaurant) {
-        return restaurantMapper.delete(restaurant);
+        return executeInTransactionWithResult(em -> restaurantMapper.delete(restaurant));
     }
 }

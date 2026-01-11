@@ -26,13 +26,25 @@ public class JpaUtils {
     public static void inTransaction(Consumer<EntityManager> consumer) {
         EntityManager em = getEntityManager();
         EntityTransaction transaction = em.getTransaction();
+        boolean weStartedTransaction = false;
+
         try {
-            transaction.begin();
+            // Ne démarre une transaction que si aucune n'est active
+            if (!transaction.isActive()) {
+                transaction.begin();
+                weStartedTransaction = true;
+            }
+
             consumer.accept(em);
-            em.flush();
-            transaction.commit();
+
+            // Ne commit que si c'est nous qui avons démarré la transaction
+            if (weStartedTransaction) {
+                em.flush();
+                transaction.commit();
+            }
         } catch (Exception ex) {
-            if (transaction.isActive()) {
+            // Ne rollback que si c'est nous qui avons démarré la transaction
+            if (weStartedTransaction && transaction.isActive()) {
                 transaction.rollback();
             }
             throw ex;
@@ -42,14 +54,27 @@ public class JpaUtils {
     public static <T> T inTransactionWithResult(Function<EntityManager, T> function) {
         EntityManager em = getEntityManager();
         EntityTransaction transaction = em.getTransaction();
+        boolean weStartedTransaction = false;
+
         try {
-            transaction.begin();
+            // Ne démarre une transaction que si aucune n'est active
+            if (!transaction.isActive()) {
+                transaction.begin();
+                weStartedTransaction = true;
+            }
+
             T result = function.apply(em);
-            em.flush();
-            transaction.commit();
+
+            // Ne commit que si c'est nous qui avons démarré la transaction
+            if (weStartedTransaction) {
+                em.flush();
+                transaction.commit();
+            }
+
             return result;
         } catch (Exception ex) {
-            if (transaction.isActive()) {
+            // Ne rollback que si c'est nous qui avons démarré la transaction
+            if (weStartedTransaction && transaction.isActive()) {
                 transaction.rollback();
             }
             throw ex;

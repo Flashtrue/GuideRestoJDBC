@@ -11,8 +11,6 @@ import java.util.*;
 
 /**
  * Point d'entrée principal de l'application GuideResto.
- *
- * @param args arguments de la ligne de commande.
  */
 public class Application {
 
@@ -412,64 +410,185 @@ public class Application {
 
     /**
      * Met à jour les informations d'un restaurant.
+     * Gère les conflits optimistes en permettant à l'utilisateur de recharger et réessayer.
      *
      * @param restaurant le restaurant à modifier.
      */
     private static void editRestaurant(Restaurant restaurant) {
-        System.out.println("Edition d'un restaurant !");
+        boolean retry;
+        do {
+            retry = false;
+            
+            System.out.println("======================================================");
+            System.out.println("Edition d'un restaurant !");
+            System.out.println("======================================================");
 
-        System.out.println("Nouveau nom : ");
-        restaurant.setName(readString());
-        System.out.println("Nouvelle description : ");
-        restaurant.setDescription(readString());
-        System.out.println("Nouveau site web : ");
-        restaurant.setWebsite(readString());
-        System.out.println("Nouveau type de restaurant : ");
+            // Afficher les valeurs actuelles et demander les nouvelles
+            System.out.println("Nom actuel : " + restaurant.getName());
+            System.out.println("Nouveau nom (ou ENTER pour garder) : ");
+            String newName = readString();
+            if (!newName.trim().isEmpty()) {
+                restaurant.setName(newName);
+            }
 
-        RestaurantType newType = pickRestaurantType(services.getRestaurantTypeService().getAll());
-        if (newType != null && !newType.equals(restaurant.getType())) {
-            restaurant.setType(newType);
-        }
+            System.out.println("\nDescription actuelle : " + restaurant.getDescription());
+            System.out.println("Nouvelle description (ou ENTER pour garder) : ");
+            String newDesc = readString();
+            if (!newDesc.trim().isEmpty()) {
+                restaurant.setDescription(newDesc);
+            }
 
-        boolean success = services.getRestaurantService().update(restaurant);
+            System.out.println("\nSite web actuel : " + restaurant.getWebsite());
+            System.out.println("Nouveau site web (ou ENTER pour garder) : ");
+            String newWebsite = readString();
+            if (!newWebsite.trim().isEmpty()) {
+                restaurant.setWebsite(newWebsite);
+            }
 
-        if (success) {
-            System.out.println("Merci, le restaurant a bien été modifié !");
-        } else {
-            System.out.println("Conflit détecté : le restaurant a été modifié par un autre utilisateur !");
-            System.out.println("Veuillez recharger les données et réessayer.");
+            System.out.println("\nType actuel : " + restaurant.getType().getLabel());
+            System.out.println("Changer le type de restaurant ? (O/n) ");
+            String changeType = readString();
+            if (changeType.equalsIgnoreCase("O")) {
+                RestaurantType newType = pickRestaurantType(services.getRestaurantTypeService().getAll());
+                if (newType != null && !newType.equals(restaurant.getType())) {
+                    restaurant.setType(newType);
+                }
+            }
 
-        }
+            // Tentative de sauvegarde
+            boolean success = services.getRestaurantService().update(restaurant);
+
+            if (success) {
+                System.out.println("\n✅ Merci, le restaurant a bien été modifié !");
+            } else {
+                System.out.println("\n⚠️  ====== CONFLIT OPTIMISTE DÉTECTÉ ======");
+                System.out.println("Le restaurant a été modifié par un autre utilisateur pendant votre édition.");
+                System.out.println("Vos modifications ne peuvent pas être appliquées dans l'état actuel.");
+                System.out.println("\nQue souhaitez-vous faire ?");
+                System.out.println("1. Recharger les données actuelles et réessayer vos modifications");
+                System.out.println("2. Abandonner les modifications");
+                System.out.print("Votre choix : ");
+
+                int choice = readInt();
+                if (choice == 1) {
+                    // Recharger le restaurant avec les données fraîches de la base
+                    Restaurant freshRestaurant = services.getRestaurantService().findById(restaurant.getId());
+                    if (freshRestaurant != null) {
+                        System.out.println("\n📋 ATTENTION - Le restaurant a été modifié par quelqu'un d'autre :");
+                        System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                        
+                        // Afficher les différences
+                        if (!restaurant.getName().equals(freshRestaurant.getName())) {
+                            System.out.println("  Nom : '" + restaurant.getName() + "' → '" + freshRestaurant.getName() + "'");
+                        }
+                        if (!restaurant.getDescription().equals(freshRestaurant.getDescription())) {
+                            System.out.println("  Description : modifiée par un autre utilisateur");
+                        }
+                        if (!restaurant.getWebsite().equals(freshRestaurant.getWebsite())) {
+                            System.out.println("  Site web : '" + restaurant.getWebsite() + "' → '" + freshRestaurant.getWebsite() + "'");
+                        }
+                        if (!restaurant.getType().equals(freshRestaurant.getType())) {
+                            System.out.println("  Type : '" + restaurant.getType().getLabel() + "' → '" + freshRestaurant.getType().getLabel() + "'");
+                        }
+                        
+                        System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                        
+                        // Remplacer par les données fraîches
+                        restaurant = freshRestaurant;
+                        retry = true;
+                        
+                        logger.warn("Conflit optimiste résolu - Utilisateur rechargera les données et réessayera");
+                        System.out.println("\n🔄 Données rechargées. Vous pouvez maintenant réessayer vos modifications...\n");
+                    } else {
+                        System.out.println("❌ ERREUR : Le restaurant a été supprimé par un autre utilisateur !");
+                        logger.error("Impossible de recharger le restaurant - Il a été supprimé");
+                    }
+                } else {
+                    System.out.println("❌ Modifications annulées.");
+                    logger.info("Utilisateur a annulé les modifications après un conflit optimiste");
+                }
+            }
+        } while (retry);
     }
 
     /**
      * Met à jour l'adresse d'un restaurant.
+     * Gère les conflits optimistes en permettant à l'utilisateur de recharger et réessayer.
      *
      * @param restaurant le restaurant dont l'adresse doit être mise à jour.
      */
     private static void editRestaurantAddress(Restaurant restaurant) {
-        System.out.println("Edition de l'adresse d'un restaurant !");
+        boolean retry;
+        do {
+            retry = false;
+            
+            System.out.println("======================================================");
+            System.out.println("Edition de l'adresse d'un restaurant !");
+            System.out.println("======================================================");
 
-        System.out.println("Nouvelle rue : ");
-        restaurant.getAddress().setStreet(readString());
-
-        City newCity = null;
-        do { 
-            newCity = pickCity(services.getCityService().getAll());
-            if (newCity != null && newCity.getId() != null) {
-                restaurant.getAddress().setCity(newCity);
-            } else {
-                System.out.println("Ville invalide, veuillez réessayer.");
+            System.out.println("Rue actuelle : " + restaurant.getAddress().getStreet());
+            System.out.println("Nouvelle rue (ou ENTER pour garder) : ");
+            String newStreet = readString();
+            if (!newStreet.trim().isEmpty()) {
+                restaurant.getAddress().setStreet(newStreet);
             }
-        } while (newCity == null || newCity.getId() == null);
 
-        boolean success = services.getRestaurantService().update(restaurant);
+            System.out.println("\nVille actuelle : " + restaurant.getAddress().getCity().getCityName() + 
+                             " (" + restaurant.getAddress().getCity().getZipCode() + ")");
+            System.out.println("Changer la ville ? (O/n) ");
+            String changeCity = readString();
+            
+            if (changeCity.equalsIgnoreCase("O")) {
+                City newCity = null;
+                do { 
+                    newCity = pickCity(services.getCityService().getAll());
+                    if (newCity != null && newCity.getId() != null) {
+                        restaurant.getAddress().setCity(newCity);
+                    } else {
+                        System.out.println("Ville invalide, veuillez réessayer.");
+                    }
+                } while (newCity == null || newCity.getId() == null);
+            }
 
-        if (success) {
-            System.out.println("L'adresse a bien été modifiée ! Merci !");
-        } else {
-            System.out.println("Une erreur est survenue lors de la modification de l'adresse !");
-        }
+            // Tentative de sauvegarde
+            boolean success = services.getRestaurantService().update(restaurant);
+
+            if (success) {
+                System.out.println("\n✅ L'adresse a bien été modifiée ! Merci !");
+            } else {
+                System.out.println("\n⚠️  ====== CONFLIT OPTIMISTE DÉTECTÉ ======");
+                System.out.println("L'adresse du restaurant a été modifiée par un autre utilisateur pendant votre édition.");
+                System.out.println("\nQue souhaitez-vous faire ?");
+                System.out.println("1. Recharger les données actuelles et réessayer");
+                System.out.println("2. Abandonner les modifications");
+                System.out.print("Votre choix : ");
+
+                int choice = readInt();
+                if (choice == 1) {
+                    Restaurant freshRestaurant = services.getRestaurantService().findById(restaurant.getId());
+                    if (freshRestaurant != null) {
+                        System.out.println("\n📋 ATTENTION - L'adresse a été modifiée par quelqu'un d'autre :");
+                        System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                        System.out.println("  Rue : " + freshRestaurant.getAddress().getStreet());
+                        System.out.println("  Ville : " + freshRestaurant.getAddress().getCity().getCityName() + 
+                                         " (" + freshRestaurant.getAddress().getCity().getZipCode() + ")");
+                        System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                        
+                        restaurant = freshRestaurant;
+                        retry = true;
+                        
+                        logger.warn("Conflit optimiste sur adresse - Utilisateur rechargera les données");
+                        System.out.println("\n🔄 Données rechargées. Vous pouvez réessayer...\n");
+                    } else {
+                        System.out.println("❌ ERREUR : Le restaurant a été supprimé !");
+                        logger.error("Restaurant supprimé pendant la modification d'adresse");
+                    }
+                } else {
+                    System.out.println("❌ Modifications annulées.");
+                    logger.info("Modifications d'adresse annulées après conflit");
+                }
+            }
+        } while (retry);
     }
 
     /**
